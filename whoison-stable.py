@@ -2,7 +2,7 @@ import discord
 import datetime
 from prettytable import PrettyTable
 
-TOKEN = 'Njg1NjQyNzQwNzg4MTAxMTQx.Xm1b5w.lt6F-wSy4pf8logtBJRFpI9zlsw'
+TOKEN = '' #Your token here 
 client = discord.Client()
 filename = str(datetime.datetime.timestamp(datetime.datetime.now())) + ".log"
 globalMap = {}

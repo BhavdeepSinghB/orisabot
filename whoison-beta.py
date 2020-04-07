@@ -1,7 +1,7 @@
 import discord
 import datetime
 
-TOKEN = 'Njg3Nzk4OTY4NjA4MDk2NTU0.XmrAwA.xNH4RxIghlme8ULsYaejH8oiUmo'
+TOKEN = '' #Your token here
 client = discord.Client()
 filename = str(datetime.datetime.timestamp(datetime.datetime.now())) + ".log"
 globalMap = {}
