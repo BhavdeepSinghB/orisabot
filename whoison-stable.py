@@ -2,10 +2,10 @@ import discord
 import datetime
 from prettytable import PrettyTable
 
-TOKEN = 'Njg1NjQyNzQwNzg4MTAxMTQx.Xq0guQ.MrMG4ddPg6xLILMAglhDDqKIN4c' #Your token here 
+TOKEN = 'Njg1NjQyNzQwNzg4MTAxMTQx.XmLokA.HcCuzvHSebE-an89lkm-tO9eXeQ' #Your token here 
 
 client = discord.Client()
-filename = str(datetime.datetime.timestamp(datetime.datetime.now())) + ".log"
+filename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".log"
 globalMap = {}
 START = datetime.datetime.now()
 numInstr = 0
@@ -63,7 +63,7 @@ async def ungroup(message, userid):
 def writeToFile(outputstr):
     global numInstr
     f = open(filename, "a")
-    f.write("[{}]: {}\n".format(datetime.datetime.timestamp(datetime.datetime.now()), outputstr))
+    f.write("[{}]: {}\n".format(datetime.datetime.now(), outputstr))
     f.close()
     numInstr += 1
 
@@ -229,11 +229,12 @@ async def on_message(message):
         callerGroup = None
         if '@' not in message.content.lower():
             await message.channel.send("Usage !group @<user> or [list of users]")
+            writeToFile("{} used incorrect group creation syntax".format(message.author.name))
             return
         elif message.author.name not in [*globalMap]:
-            await message.channel.send(
-                "Group Creation Failure: {} is not online. Please type \"!on\" tp set your status as online".format(
-                    message.author.name))
+            outputstr = "Group Creation Failure: {} is not online. Please type \"!on\" tp set your status as online".format(message.author.name)
+            await message.channel.send(outputstr)
+            writeToFile(outputstr)
             return
         else:
             if isGrouped(message.author.id):
@@ -256,24 +257,34 @@ async def on_message(message):
                     allgrouped[i] = callerGroup
             validateGroup(message)
             if message.author.id not in [*allgrouped]:
+                writeToFile("{} created an invalid group, handled".format(message.author.name))
                 await message.channel.send("group invalid, number of valid members must be at least 2")
             else:
-                await message.channel.send("New Group Created for {}!".format(message.author.name))
+                outputstr = "New Group Created for {}!".format(message.author.name)
+                await message.channel.send(outputstr)
+                writeToFile(outputstr)
                 if len(acceptedList) > 0:
-                    await message.channel.send("The following players were added to the group {}".format(acceptedList))
+                    outputstr = "The following players were added to the group {}".format(acceptedList)
+                    await message.channel.send(outputstr)
+                    writeToFile(outputstr)
                 if len(blockedList) > 0:
-                    await message.channel.send(
-                        "The following players were not added since they are already grouped or offline, type !ungroup to remove yourself or !on to set your status as online {}".format(
-                            blockedList))
+                    outputstr = "The following players were not added since they are already grouped or offline, type !ungroup to remove yourself or !on to set your status as online {}".format(
+                            blockedList)
+                    await message.channel.send(outputstr)
+                    writeToFile(outputstr)
 
     if "!ungroup" in message.content.lower():
         if message.author.name == "Orisa":
             return
         callerGroup = None
         if message.author.name not in [*globalMap]:
-            await message.channel.send("{} is not online, therefore not part of any groups".format(message.author.name))
+            outputstr = "{} is not online, therefore not part of any groups".format(message.author.name)
+            await message.channel.send(outputstr)
+            writeToFile(outputstr)
         elif message.author.id not in [*allgrouped]:
-            await message.channel.send("{} was not part of a group".format(message.author.name))
+            outputstr = "{} was not part of a group".format(message.author.name)
+            await message.channel.send(outputstr)
+            writeToFile(outputstr)
         else:
            await ungroup(message, message.author.id)
 
@@ -283,7 +294,40 @@ async def on_message(message):
         else:
             await message.channel.send("The following is a list of all groups")
             for i in groupList:
-                await message.channel.send(i)
+                await message.channel.send("{}) {}".format(groupList.index(i) + 1, i))
+        writeToFile("{} invoked whoisgrouped command. Returned {} results".format(message.author.name, len(groupList)))
+
+    # Admin command for destroying groups
+    if "!destroygroup" in message.content.lower() and "admin" in [y.name.lower() for y in message.author.roles]:
+        if message.author.name == "Orisa":
+            return
+        outputstr = "Admin command invoked by {}".format(message.author.name)
+        await message.channel.send(outputstr)
+        writeToFile(outputstr)
+        if len(groupList) == 0:
+            outputstr = "There are no active groups!"
+            await message.channel.send(outputstr)
+            writeToFile(outputstr)
+        elif not any(map(str.isdigit, message.content.lower())):
+            await message.channel.send("Usage: !destroygroup <group number>.\nPlease take a look at !whoisgrouped for the group number")
+            writeToFile("{} invoked command without numbers".format(message.author.name))
+        else:
+            groupNo = int(message.content.lower().split(' ')[1]) - 1
+            
+            if groupNo < 0 or groupNo >= len(groupList):
+                await message.channel.send("Invalid group number")
+                writeToFile("{} invoked command with incorrect number".format(message.author.name))
+            ungroupList = [k for k,v in allgrouped.items() if int(v) == groupNo]
+            try:
+                for i in ungroupList:
+                    await ungroup(message, i)
+            except KeyError as e:
+                writeToFile("Error: {}".format(e))
+    #Misc - won't be written to log files
+
+    if message.content.lower() == "f":
+        await message.channel.send("{} has put some respec on it".format(message.author.name))
+
 
 
 
