@@ -1,8 +1,11 @@
 import discord
 import datetime
 from prettytable import PrettyTable
+import random
+import asyncio
+import copy
 
-TOKEN = 'Njg1NjQyNzQwNzg4MTAxMTQx.XmLokA.HcCuzvHSebE-an89lkm-tO9eXeQ' #Your token here 
+TOKEN = 'Njg1NjQyNzQwNzg4MTAxMTQx.XmLokA.Cm2Z45j_eG8gu3aZFsKQI40OXhU' #Your token here 
 
 client = discord.Client()
 filename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".log"
@@ -11,6 +14,10 @@ START = datetime.datetime.now()
 numInstr = 0
 allgrouped = {}
 groupList = []
+
+CONTROL = ['Busan', 'Ilios', 'Lijang Tower', 'Nepal', 'Oasis']
+ASSAULT = ['Hanamura', 'Temple of Anubis', 'Volskaya Industries']
+ESCORTHYB = ['Dorado', 'Havana', 'Junkertown', 'Rialto', 'Route 66', 'Watchpoint Gibraltar', 'Blizzard World', 'Eichenwalde', 'Hollywood', 'King\'s Row', 'Numbani']
 
 def formatID(unformattedID):
     if str(unformattedID[0]) == '!':
@@ -323,11 +330,161 @@ async def on_message(message):
                     await ungroup(message, i)
             except KeyError as e:
                 writeToFile("Error: {}".format(e))
+    
+    #Practice Command for admins, to avoid spam
+    if "!practice" in message.content.lower() and "admin" in [y.name.lower() for y in message.author.roles]:
+        # Making copies here to accomodate removal of maps that have already been played
+        control = copy.copy(CONTROL)
+        assault = copy.copy(ASSAULT)
+        escorthyb = copy.copy(ESCORTHYB)
+
+        uniqueCaps = True
+        uniqueMaps = True
+        customMaps = False
+
+        if "-nuc" in message.content.lower():
+            uniqueCaps = False
+        if "-num" in message.content.lower():
+            uniqueMaps = False
+        if "-cm" in message.content.lower():
+            customMaps = True
+        # Take all online members at the time of invoking
+        allOn = [*globalMap]
+        
+        numGames = int(message.content.lower().split(' ')[1])
+
+        outputstr = "Creating a"
+        
+        if customMaps:
+            outputstr += " custom"
+            allmaps = (control + assault + escorthyb)
+            random.shuffle(allmaps)
+            for i in allmaps:
+                i = i.lower()
+            args = message.content.lower().split(' ')[2:]
+            for i in args:
+                if '-' in i:
+                    args.remove(i)
+            if len(args) == 0:
+                await message.channel.send("Please provide at least one map to make a custom practice session")
+                return
+            for unformattedmap in args:
+                for formattedmap in allmaps:
+                    if unformattedmap.lower() in formattedmap.lower():
+                        args.insert(args.index(unformattedmap), formattedmap)
+                        args.remove(unformattedmap)
+
+        outputstr += " practice session with {} players".format(len(allOn))
+        if uniqueCaps:
+            outputstr += " where captains will be unique"
+        else:
+            outputstr += " where captains MAY repeat"
+        if not customMaps or (customMaps and len(args) < numGames):
+            if uniqueMaps:
+                outputstr += " and maps will be unique"
+            else:
+                outputstr += " and maps MAY repeat"
+        await message.channel.send(outputstr)
+        writeToFile(outputstr)
+
+        if len(allOn) < 12:
+            await message.channel.send("Seems like less than 12 players are online, if you have enough randos or those who aren't online, please react with 👍 to proceed WITHIN 60 SECONDS")
+
+            def check(reaction, user):
+                return user == message.author and str(reaction.emoji) == '👍'
+            
+            try:
+                await client.wait_for('reaction_add', timeout=60.0, check=check)
+            except asyncio.TimeoutError as e:
+                await message.channel.send("Time Out, please invoke practice again when you are ready")
+                return
+
+        if 2*numGames > len(allOn):
+            await message.channel.send("Not enough unique captains for the number of games specified, captains will be repeated")
+            uniqueCaps = False
+        
+        if numGames < 3:
+            outputstr = "The number of games does not cover all game modes, you will start with Control map"
+            if numGames == 2:
+                outputstr += " and have a game of Assault/2CP"
+            await message.channel.send(outputstr)
+        
+        
+
+        i = 0
+        while i < numGames:
+            if customMaps:
+                try:
+                    gameMap = args[i]
+                    if uniqueMaps:
+                        if gameMap in assault:
+                            assault.remove(gameMap)
+                        elif gameMap in control:
+                            control.remove(gameMap)
+                        elif gameMap in escorthyb:
+                            escorthyb.remove(gameMap)
+                except IndexError as e:
+                    customMaps = False
+                    continue
+            elif (i+1) % 3 == 0:
+                gameMap = escorthyb[random.randint(0, len(escorthyb)-1)]
+                if uniqueMaps: 
+                    escorthyb.remove(gameMap)
+            elif (i+1) % 2 == 0:
+                gameMap = assault[random.randint(0, len(assault)-1)]
+                if uniqueMaps:
+                    assault.remove(gameMap)
+            else:
+                gameMap = control[random.randint(0, len(control)-1)]
+                if uniqueMaps:
+                    control.remove(gameMap)
+
+            cap1 = allOn[random.randint(0, len(allOn)-1)]
+            cap2 = allOn[random.randint(0, len(allOn)-1)]
+            while(cap2 == cap1):
+                cap2 = allOn[random.randint(0, len(allOn)-1)]
+            if uniqueCaps:
+                allOn.remove(cap1)
+                allOn.remove(cap2)
+            await message.channel.send("Game {}: {} vs {}\nMap: {}".format(i + 1, cap1, cap2, gameMap))
+            i += 1
+
     #Misc - won't be written to log files
-
     if message.content.lower() == "f":
-        await message.channel.send("{} has put some respec on it".format(message.author.name))
+        await message.channel.send("{} has put some respecc on it".format(message.author.name))
+    
+    if message.content.lower() == "a":
+        await message.channel.send("{} has assembled the Avengers!".format(message.author.name))
+    
+    if message.content.lower() == "x":
+        await message.channel.send("{} has assembled the X-Men!".format(message.author.name))
 
+    if "!" in message.content.lower() and "cute" in message.content.lower():
+        unformattedName = message.content.lower().split('cute')[0][1:]
+        
+        if unformattedName.lower() == "taco":
+            await message.channel.send("Taco is no longer ugly")
+            return
+        elif unformattedName.lower() == "cum":
+            await message.channel.send("Cum is no longer ugly")
+            return
+        elif unformattedName.lower() == "evixx":
+            await message.channel.send("Evixx was never ugly!")
+            return
+        elif unformattedName.lower() == "pants":
+            await message.channel.send("YOU DARE TRY TO IMPLY THAT OUR LORD AND SAVIOR IS UGLY?!")
+            return 
+        
+        for member in message.guild.members:
+            if unformattedName.lower() in str(member.name).lower():
+                if str(member.name) in ['Dj_RealMeal', 'trippymcgee', 'Ibonal (E-Bot)']:
+                    await message.channel.send("{} was never ugly!".format(member.name))
+                    return
+                await message.channel.send("{} is no longer ugly".format(member.name))
+                return
+        
+        await message.channel.send("Idk who you're talking about but you, {}, are very cute".format(message.author.name))
+        
 
 
 
