@@ -5,7 +5,8 @@ import random
 import asyncio
 import copy
 
-TOKEN = 'Njg1NjQyNzQwNzg4MTAxMTQx.XmLokA.Cm2Z45j_eG8gu3aZFsKQI40OXhU' #Your token here 
+# Currently Running : Off
+TOKEN = '#' #Your token here 
 
 client = discord.Client()
 filename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".log"
@@ -105,7 +106,7 @@ async def on_message(message):
         writeToFile(outputstr)
 
 
-    if message.content.lower().startswith("!whoison"):
+    if message.content.lower() in ["!whoison", "!whoson", "!whoon", "!whothefuckison", "!whotfison"]:
         if message.author.name == "Orisa":
             return
         sortedList = sorted(globalMap.items(), key=lambda x: x[1])
