@@ -256,7 +256,7 @@ async def on_message(message):
     
     if "!help" in message.content.lower(): 
         outputstr = "Hi, I'm Orisa, a bot made by Zoid to automate the boring stuff on this server. For a full list of commands and documentation follow the link below \n"
-        outputstr += "https://link-to-the-readme-page.html"
+        outputstr += "https://bhavdeepsinghb.github.io/OrisaBot"
         await message.channel.send(outputstr)
 
     # Grouping
