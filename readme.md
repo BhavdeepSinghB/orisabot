@@ -2,7 +2,7 @@
 
 List of instructions and general information about Orisa. The code lives [here](https://github.com/bhavdeepsinghb/whoison)
 
-[**What's New?**](#what's-new)
+[**What's New?**](#whats-new)
 
 **Current Version:**
 
