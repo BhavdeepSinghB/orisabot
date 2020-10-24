@@ -20,10 +20,6 @@ numBugs = 0
 allgrouped = {}
 groupList = []
 
-CONTROL = ['Busan', 'Ilios', 'Lijang Tower', 'Nepal', 'Oasis']
-ASSAULT = ['Hanamura', 'Temple of Anubis', 'Volskaya Industries']
-ESCORTHYB = ['Dorado', 'Havana', 'Junkertown', 'Rialto', 'Route 66', 'Watchpoint Gibraltar', 'Blizzard World', 'Eichenwalde', 'Hollywood', 'King\'s Row', 'Numbani']
-
 
 def isGrouped(userID):
     if userID in [*allgrouped]:
@@ -67,11 +63,11 @@ async def on(message):
             addedPersonID = formatID(addedPersonID)
             outputstr = "Admin command invoked by {}".format(message.author.name)
             await message.channel.send(outputstr)
-            # writeToFile(outputstr)
+            writeToFile(outputstr)
         else:
             outputstr = "Sorry, {}, you do not have admin privellages!, you cannot invoke off or on for other users".format(message.author.name)
             await message.channel.send(outputstr)
-            # writeToFile(outputstr)
+            writeToFile(outputstr)
             return
     globalMap[int(addedPersonID)] = datetime.datetime.now()
     outputstr = "{} is now online!".format(getUser(addedPersonID, message))
@@ -85,12 +81,12 @@ async def whoison(message):
     if len(sortedList) == 0:
         outputstr = "No one is on at the moment, {}, if you're going online, say \"!on\" to let people know!".format(message.author.name)
         await message.channel.send(outputstr)
-        # writeToFile(outputstr)
+        writeToFile(outputstr)
         return
     for i in sortedList:
         outputstr = "{} has been on for {}".format(getUser(i[0], message), str((end - i[1])))
         await message.channel.send(outputstr.split('.')[0])
-        # writeToFile(outputstr)
+        writeToFile(outputstr)
 
 async def off(message):
     deletedPersonID = message.author.id
@@ -102,22 +98,22 @@ async def off(message):
             deletedPersonID = formatID(deletedPersonID)
             outputstr = "Admin command invoked by {}".format(message.author.name)
             await message.channel.send(outputstr)
-            # writeToFile(outputstr)
+            writeToFile(outputstr)
         else:
             outputstr = "Sorry, {}, you do not have admin privellages!, you cannot invoke off or on for other users".format(
                 message.author.name)
             await message.channel.send(outputstr)
-            # writeToFile(outputstr)
+            writeToFile(outputstr)
             return
     try:
         del globalMap[int(deletedPersonID)]
         outputstr = "{} is now offline".format(getUser(deletedPersonID, message))
         await message.channel.send(outputstr)
-        # writeToFile(outputstr)
+        writeToFile(outputstr)
     except KeyError:
         outputstr = "{} was not online".format(getUser(deletedPersonID, message))
         await message.channel.send(outputstr)
-        # writeToFile(outputstr)
+        writeToFile(outputstr)
     # If user was in any existing group, kick em out
     if isGrouped(deletedPersonID):
         await ungroup(message, deletedPersonID)
@@ -130,12 +126,12 @@ async def group(message):
     callerGroup = None
     if '@' not in message.content.lower():
         await message.channel.send("Usage !group @<user> or [list of users]")
-        # writeToFile("{} used incorrect group creation syntax".format(message.author.name))
+        writeToFile("{} used incorrect group creation syntax".format(message.author.name))
         return
     elif message.author.id not in [*globalMap]:
         outputstr = "Group Creation Failure: {} is not online. Please type \"!on\" tp set your status as online".format(message.author.name)
         await message.channel.send(outputstr)
-        # writeToFile(outputstr)
+        writeToFile(outputstr)
         return
     else:
         if isGrouped(message.author.id):
@@ -158,41 +154,41 @@ async def group(message):
                 allgrouped[i] = callerGroup
         validateGroup(message)
         if message.author.id not in [*allgrouped]:
-            # writeToFile("{} created an invalid group, handled".format(message.author.name))
+            writeToFile("{} created an invalid group, handled".format(message.author.name))
             await message.channel.send("group invalid, number of valid members must be at least 2")
         else:
             outputstr = "New Group Created for {}!".format(message.author.name)
             await message.channel.send(outputstr)
-            # writeToFile(outputstr)
+            writeToFile(outputstr)
             if len(acceptedList) > 0:
                 outputstr = "The following players were added to the group {}".format(acceptedList)
                 await message.channel.send(outputstr)
-                # writeToFile(outputstr)
+                writeToFile(outputstr)
             if len(blockedList) > 0:
                 outputstr = "The following players were not added since they are already grouped or offline, type !ungroup to remove yourself or !on to set your status as online {}".format(
                         blockedList)
                 await message.channel.send(outputstr)
-                # writeToFile(outputstr)
+                writeToFile(outputstr)
 
 async def destroygroup(message):
     if message.author.name == "Orisa":
             return
     outputstr = "Admin command invoked by {}".format(message.author.name)
     await message.channel.send(outputstr)
-    # writeToFile(outputstr)
+    writeToFile(outputstr)
     if len(groupList) == 0:
         outputstr = "There are no active groups!"
         await message.channel.send(outputstr)
-        # writeToFile(outputstr)
+        writeToFile(outputstr)
     elif not any(map(str.isdigit, message.content.lower())):
         await message.channel.send("Usage: !destroygroup <group number>.\nPlease take a look at !whoisgrouped for the group number")
-        # writeToFile("{} invoked command without numbers".format(message.author.name))
+        writeToFile("{} invoked command without numbers".format(message.author.name))
     else:
         groupNo = int(message.content.lower().split(' ')[1]) - 1
         
         if groupNo < 0 or groupNo >= len(groupList):
             await message.channel.send("Invalid group number")
-            # writeToFile("{} invoked command with incorrect number".format(message.author.name))
+            writeToFile("{} invoked command with incorrect number".format(message.author.name))
         ungroupList = [k for k,v in allgrouped.items() if int(v) == groupNo]
         try:
             for i in ungroupList:
@@ -234,7 +230,7 @@ async def on_message(message):
             globalMap[member.id] = datetime.datetime.now()
         outputstr = "Admin command invoked by {}, everyone is on!".format(message.author.name)
         await message.channel.send(outputstr)
-        # writeToFile(outputstr)
+        writeToFile(outputstr)
 
     if "!alloff" in message.content.lower() and "admin" in  [y.name.lower() for y in message.author.roles]:
         globalMap.clear()
@@ -242,7 +238,7 @@ async def on_message(message):
         groupList.clear()
         outputstr = "Admin command invoked by {}, everyone is off! All groups destroyed!".format(message.author.name)
         await message.channel.send(outputstr)
-        # writeToFile(outputstr)
+        writeToFile(outputstr)
 
     # Status Commands
     if "!status" in message.content.lower():
@@ -256,7 +252,7 @@ async def on_message(message):
             outputstr += "{} unique bugs have been reported\n".format(numBugs)
             # Saving this space for any other meta information people might need
         await message.channel.send(outputstr)
-        # writeToFile(outputstr)
+        writeToFile(outputstr)
     
     if "!help" in message.content.lower(): 
         outputstr = "Hi, I'm Orisa, a bot made by Zoid to automate the boring stuff on this server. For a full list of commands and documentation follow the link below \n"
@@ -273,11 +269,11 @@ async def on_message(message):
         if message.author.id not in [*globalMap]:
             outputstr = "{} is not online, therefore not part of any groups".format(message.author.name)
             await message.channel.send(outputstr)
-            # writeToFile(outputstr)
+            writeToFile(outputstr)
         elif message.author.id not in [*allgrouped]:
             outputstr = "{} was not part of a group".format(message.author.name)
             await message.channel.send(outputstr)
-            # writeToFile(outputstr)
+            writeToFile(outputstr)
         else:
            await ungroup(message, message.author.id)
 
@@ -288,7 +284,7 @@ async def on_message(message):
             await message.channel.send("The following is a list of all groups")
             for i in groupList:
                 await message.channel.send("{}) {}".format(groupList.index(i) + 1, i))
-        # writeToFile("{} invoked whoisgrouped command. Returned {} results".format(message.author.name, len(groupList)))
+        writeToFile("{} invoked whoisgrouped command. Returned {} results".format(message.author.name, len(groupList)))
 
     # Admin command for destroying groups
     if "!destroygroup" in message.content.lower() and "admin" in [y.name.lower() for y in message.author.roles]:
