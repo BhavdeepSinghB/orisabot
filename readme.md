@@ -36,7 +36,7 @@ In the most basic sense, you will be using these three commands the most, howeve
 ****
 ## !help
     
-    Gives you a link to this page
+Gives you a link to this page
 
 * **Arguments**
     
@@ -56,7 +56,7 @@ In the most basic sense, you will be using these three commands the most, howeve
     
 ## !status
     
-    Check if the bot is online and processing instructions
+Check if the bot is online and processing instructions
 
 * **Arguments**
     
@@ -80,8 +80,9 @@ In the most basic sense, you will be using these three commands the most, howeve
 
 
 ## !on
-    Sets your status to online. 
-    You can now form groups, be included in groups and will be considered for captaincy during practice.
+Sets your status to online. 
+
+You can now form groups, be included in groups and will be considered for captaincy during practice.
 
 * **Arguments**
     
@@ -103,7 +104,7 @@ In the most basic sense, you will be using these three commands the most, howeve
         SampleUser is now online!
 
 ## !whoison
-    Shows a list of all online players
+Shows a list of all online players
 
 * **Arguments**
 
@@ -121,8 +122,9 @@ In the most basic sense, you will be using these three commands the most, howeve
 
 
 ## !off
-    Sets your status to offline. 
-    You are automatically removed from any groups and will not be considered for captaincy in practice.
+Sets your status to offline. 
+
+You are automatically removed from any groups and will not be considered for captaincy in practice.
 
 * **Arguments**
     
@@ -146,7 +148,7 @@ In the most basic sense, you will be using these three commands the most, howeve
 
 
 ## !allon
-    (Admin ONLY) Sets all members' statuses to online
+(Admin ONLY) Sets all members' statuses to online
 
 * **Arguments**
     
@@ -162,7 +164,7 @@ In the most basic sense, you will be using these three commands the most, howeve
 
 
 ## !alloff
-    (Admin ONLY) Sets all members' statuses to offline and destroys any active groups
+(Admin ONLY) Sets all members' statuses to offline and destroys any active groups
 
 * **Arguments**
     
@@ -181,9 +183,11 @@ In the most basic sense, you will be using these three commands the most, howeve
 
 ## !group {user/list of users}
     
-    In order to use groups, please make sure you're online.
-    If ungrouped - creates a new group of calling user + all valid mentioned users
-    If grouped - adds all valid mentioned users to current group
+In order to use groups, please make sure you're online.
+
+*If ungrouped* - creates a new group of calling user + all valid mentioned users
+
+*If grouped* - adds all valid mentioned users to current group
 
 * **User Validity**
     
@@ -216,7 +220,7 @@ In the most basic sense, you will be using these three commands the most, howeve
         as online ['invalidUser']
 
 ## !whoisgrouped
-    Shows a list of all active groups
+Shows a list of all active groups
 
 * **Arguments**
     
@@ -234,9 +238,9 @@ In the most basic sense, you will be using these three commands the most, howeve
 
 
 ## !ungroup
-    If you were in a group, removes you.
+If you were in a group, removes you.
 
-    If there was just one other person in your group, they are ungrouped too and your group is destroyed.
+If there was just one other person in your group, they are ungrouped too and your group is destroyed.
 
 * **Arguments**
     
@@ -256,7 +260,7 @@ In the most basic sense, you will be using these three commands the most, howeve
         Zoid's group has been destroyed, SampleUser has now been ungrouped
 
 ## !destroygroup {group number}
-    (Admin ONLY) Destroys group with corresponding number
+(Admin ONLY) Destroys group with corresponding number
 
 * **Arguments**
     
@@ -287,9 +291,9 @@ In the most basic sense, you will be using these three commands the most, howeve
 ****
 
 ## !practice {number of games} [list of arguments]
-    (Admin Only) Creates a new practice session with unique maps and captains for each game. 
+(Admin Only) Creates a new practice session with unique maps and captains for each game. 
 
-    Check out arguments to customize your practice
+Check out arguments to customize your practice
 
 * **Notes**
     - At least 12 players must be online at the time practice is being created. If fewer players are online, a confirmation message is sent and the caller of the practice must react to it in within 60 seconds.
@@ -350,7 +354,7 @@ In the most basic sense, you will be using these three commands the most, howeve
 ****
 
 ## !bug
-    Minimal bug report, notifies @Zoid of a bug, marks the location in the run's logfile
+Minimal bug report, notifies @Zoid of a bug, marks the location in the run's logfile
 
 * **Arguments**
     
@@ -374,8 +378,9 @@ SOME commands will NOT use the exclamation mark (`!`)
 
 
 ## F 
-    Lets the server know you have paid your respects.
-    Case insensitive - f = F
+Lets the server know you have paid your respects.
+
+Case insensitive - f = F
 * **Arguments**
     
     _None_
@@ -389,8 +394,9 @@ SOME commands will NOT use the exclamation mark (`!`)
         Zoid has put some respecc on it
 
 ## X / A
-    Assemble either the X-men or the Avengers
-    Case insensitive - x = X / a = A
+Assemble either the X-men or the Avengers
+
+Case insensitive - x = X / a = A
 * **Arguments**
     
     _None_
@@ -408,7 +414,7 @@ SOME commands will NOT use the exclamation mark (`!`)
         Zoid has assembled the X-Men!
 
 ## !{name}cute
-    Returns a message about the cuteness of user with {name}
+Returns a message about the cuteness of user with {name}
 
 * **Arguments**
     
