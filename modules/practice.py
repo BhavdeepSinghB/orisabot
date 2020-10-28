@@ -1,6 +1,5 @@
 import random
 import asyncio
-from modules.utils import getUser
 
 async def practice(message, globalMap, client): 
     # Making copies here to accomodate removal of maps that have already been played
@@ -73,7 +72,7 @@ async def practice(message, globalMap, client):
         await message.channel.send("Not enough unique captains for the number of games specified, captains will be repeated")
         uniqueCaps = False
 
-    if numGames < 3:
+    if numGames < 3 and not customMaps:
         outputstr = "The number of games does not cover all game modes, you will start with Control map"
         if numGames == 2:
             outputstr += " and have a game of Assault/2CP"
@@ -114,7 +113,5 @@ async def practice(message, globalMap, client):
         if uniqueCaps:
             allOn.remove(cap1)
             allOn.remove(cap2)
-        cap1 = getUser(cap1, message)
-        cap2 = getUser(cap2, message)
-        await message.channel.send("Game {}: {} vs {}\nMap: {}".format(i + 1, cap1, cap2, gameMap))
+        await message.channel.send("Game {}: {} vs {}\nMap: {}".format(i + 1, cap1.name, cap2.name, gameMap))
         i += 1

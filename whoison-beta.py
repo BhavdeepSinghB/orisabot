@@ -5,21 +5,21 @@ import random
 import asyncio
 import copy
 from modules.practice import practice
-from modules.utils import *
 
 
-# Currently Running : Orisa
+
+# Currently Running : Bastion
 TOKEN = '#' #Your token here 
 
 client = discord.Client()
 filename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".log"
-globalMap = {}
-START = datetime.datetime.now()
-numInstr = 0
-numBugs = 0
-allgrouped = {}
-groupList = []
-
+globalMap = {} # dict {user : datetime}
+START = datetime.datetime.now() # bot start time
+numInstr = 0 # number of instructions parsed
+numBugs = 0 # number of bugs reported
+allgrouped = {} # dict {id : group number}
+groupList = [] # list of lists groupList : [ [ users ] ]
+smurfList = [] # list of all online smurf accounts
 
 def isGrouped(userID):
     if userID in [*allgrouped]:
@@ -29,22 +29,21 @@ def isGrouped(userID):
 
 def validateGroup(message):
     for l in groupList:
-        if len(l) <= 1:
-            allgrouped.pop(getID(l[0], message))
+        if len(l) == 1:
+            allgrouped.pop(l[0])
             groupList.remove(l)
 
-async def ungroup(message, userid):
-    user = getUser(userid, message)
-    callerGroup = allgrouped[userid]
+async def ungroup(message, user):
+    callerGroup = allgrouped[user]
     groupList[callerGroup].remove(user)
     callerGroup = groupList[callerGroup]
-    del allgrouped[userid]
-    await message.channel.send("{} has been removed from the group".format(user))
+    del allgrouped[user]
+    await message.channel.send("{} has been removed from the group".format(user.name))
     validateGroup(message)
     if callerGroup not in groupList:
         await message.channel.send(
             "{}'s group has been destroyed, {} has now been ungrouped".format(
-               user, callerGroup[0]))
+               user.name, callerGroup[0].name))
 
 def writeToFile(outputstr):
     global numInstr
@@ -54,28 +53,30 @@ def writeToFile(outputstr):
     numInstr += 1
 
 async def on(message):
-    addedPersonID = message.author.id
-    if message.author.name == "Orisa":
-        return
-    if "@" in message.content.lower():
+    addedPerson = message.author
+    mentions = message.mentions
+    if len(mentions) > 0 :
         if "admin" in [y.name.lower() for y in message.author.roles]:
-            addedPersonID = message.content.split("@")[1]
-            addedPersonID = formatID(addedPersonID)
             outputstr = "Admin command invoked by {}".format(message.author.name)
             await message.channel.send(outputstr)
             writeToFile(outputstr)
+            for i in mentions:
+                globalMap[i] = datetime.datetime.now()
+                outputstr = "{} is now online!".format(i.name)
+                await message.channel.send(outputstr)
         else:
             outputstr = "Sorry, {}, you do not have admin privellages!, you cannot invoke off or on for other users".format(message.author.name)
             await message.channel.send(outputstr)
             writeToFile(outputstr)
             return
-    globalMap[int(addedPersonID)] = datetime.datetime.now()
-    outputstr = "{} is now online!".format(getUser(addedPersonID, message))
-    await message.channel.send(outputstr)
+    else:
+        globalMap[addedPerson] = datetime.datetime.now()        
+        outputstr = "{} is now online!".format(message.author.name)
+        await message.channel.send(outputstr)
+        writeToFile(outputstr)
+
 
 async def whoison(message):
-    if message.author.name == "Orisa":
-            return
     sortedList = sorted(globalMap.items(), key=lambda x: x[1])
     end = datetime.datetime.now()
     if len(sortedList) == 0:
@@ -84,95 +85,100 @@ async def whoison(message):
         writeToFile(outputstr)
         return
     for i in sortedList:
-        outputstr = "{} has been on for {}".format(getUser(i[0], message), str((end - i[1])))
+        outputstr = "{}".format(i[0].name)
+        if i[0] in smurfList:
+            outputstr += " (smurf) " 
+        outputstr += " has been on for {}".format(str((end - i[1])))
         await message.channel.send(outputstr.split('.')[0])
         writeToFile(outputstr)
 
 async def off(message):
-    deletedPersonID = message.author.id
-    if message.author.name == "Orisa":
-        return
-    if "@" in message.content.lower():
+    deletedPerson = message.author
+    
+    async def turnOff(user):
+        try:
+            del globalMap[user]
+            # Remove from smurfs
+            if user in smurfList:
+                smurfList.remove(user)
+            # Remove from groups
+            if isGrouped(user.id):
+                await ungroup(message, user)
+            return "{} is now offline".format(user.name)
+        except KeyError:
+            return "{} was not online".format(user.name)
+
+    mentions = message.mentions
+    if len(mentions) > 0:
         if "admin" in [y.name.lower() for y in message.author.roles]:
-            deletedPersonID = message.content.split("@")[1]
-            deletedPersonID = formatID(deletedPersonID)
-            outputstr = "Admin command invoked by {}".format(message.author.name)
-            await message.channel.send(outputstr)
-            writeToFile(outputstr)
+            for i in mentions:
+                    outputstr = await turnOff(i)
+                    await message.channel.send(outputstr)
+                    writeToFile(outputstr)
         else:
-            outputstr = "Sorry, {}, you do not have admin privellages!, you cannot invoke off or on for other users".format(
-                message.author.name)
+            outputstr = "Sorry, {}, you do not have admin privellages!, you cannot invoke off or on for other users".format(message.author.name)
             await message.channel.send(outputstr)
             writeToFile(outputstr)
-            return
-    try:
-        del globalMap[int(deletedPersonID)]
-        outputstr = "{} is now offline".format(getUser(deletedPersonID, message))
+    else:
+        outputstr = await turnOff(deletedPerson)
         await message.channel.send(outputstr)
         writeToFile(outputstr)
-    except KeyError:
-        outputstr = "{} was not online".format(getUser(deletedPersonID, message))
-        await message.channel.send(outputstr)
-        writeToFile(outputstr)
-    # If user was in any existing group, kick em out
-    if isGrouped(deletedPersonID):
-        await ungroup(message, deletedPersonID)
+
 
 async def group(message):
-    if message.author.name == "Orisa":
-            return
     blockedList = []
     acceptedList = []
     callerGroup = None
-    if '@' not in message.content.lower():
+    mentions = message.mentions
+    if len(mentions) == 0:
         await message.channel.send("Usage !group @<user> or [list of users]")
         writeToFile("{} used incorrect group creation syntax".format(message.author.name))
         return
-    elif message.author.id not in [*globalMap]:
+    elif message.author not in [*globalMap]:
         outputstr = "Group Creation Failure: {} is not online. Please type \"!on\" tp set your status as online".format(message.author.name)
         await message.channel.send(outputstr)
         writeToFile(outputstr)
         return
     else:
         if isGrouped(message.author.id):
-            callerGroup = allgrouped[message.author.id]
+            callerGroup = allgrouped[message.author]
         else:
-            newGroup = [message.author.name]
+            newGroup = [message.author]
             groupList.append(newGroup)
             callerGroup = groupList.index(newGroup)
-            allgrouped[message.author.id] = callerGroup
-        textList = message.content.lower().split('@')[1:]
-        IDList = [int(formatID(i)) for i in textList]
-        if message.author.id in IDList:
-            IDList.remove(message.author.id)
-        for i in IDList:
-            if int(i) in [*allgrouped] or int(i) not in [*globalMap]:
-                blockedList.append(getUser(int(i), message))
+            allgrouped[message.author] = callerGroup
+        
+        if message.author in mentions:
+            mentions.remove(message.author)
+        
+        for i in mentions:
+            if i in [*allgrouped] or i not in [*globalMap]:
+                blockedList.append(i.name)
             else:
-                acceptedList.append(getUser(int(i), message))
-                groupList[callerGroup].append(getUser(int(i), message))
+                acceptedList.append(i.name)
+                groupList[callerGroup].append(i)
                 allgrouped[i] = callerGroup
+        
         validateGroup(message)
-        if message.author.id not in [*allgrouped]:
+        
+        if message.author not in [*allgrouped]:
             writeToFile("{} created an invalid group, handled".format(message.author.name))
-            await message.channel.send("group invalid, number of valid members must be at least 2")
+            await message.channel.send("Group invalid, number of valid members must be at least 2")
         else:
             outputstr = "New Group Created for {}!".format(message.author.name)
             await message.channel.send(outputstr)
             writeToFile(outputstr)
             if len(acceptedList) > 0:
-                outputstr = "The following players were added to the group {}".format(acceptedList)
+                outputstr = "The following players were added to the group {}".format(acceptedList).replace('[', '').replace(']', '')
                 await message.channel.send(outputstr)
                 writeToFile(outputstr)
             if len(blockedList) > 0:
                 outputstr = "The following players were not added since they are already grouped or offline, type !ungroup to remove yourself or !on to set your status as online {}".format(
-                        blockedList)
+                        blockedList).replace('[', '').replace(']', '')
                 await message.channel.send(outputstr)
-                writeToFile(outputstr)
+                writeToFile(outputstr)        
 
 async def destroygroup(message):
-    if message.author.name == "Orisa":
-            return
     outputstr = "Admin command invoked by {}".format(message.author.name)
     await message.channel.send(outputstr)
     writeToFile(outputstr)
@@ -189,6 +195,7 @@ async def destroygroup(message):
         if groupNo < 0 or groupNo >= len(groupList):
             await message.channel.send("Invalid group number")
             writeToFile("{} invoked command with incorrect number".format(message.author.name))
+            return
         ungroupList = [k for k,v in allgrouped.items() if int(v) == groupNo]
         try:
             for i in ungroupList:
@@ -211,9 +218,19 @@ async def on_message(message):
     global numInstr
     global numBugs
 
+    if message.author == client.user:
+            return
+
     if "!on" in message.content.lower():
         await on(message)
 
+    if "!smurf" in message.content.lower():
+        smurfList.append(message.author)
+        if message.author not in [*globalMap]:
+            await on(message)
+        outputstr = "{} is now smurfing".format(message.author.name)
+        await message.channel.send(outputstr)
+        writeToFile(outputstr)
 
     if message.content.lower() in ["!whoison", "!whoson", "!whoon", "!whothefuckison", "!whotfison"]:
         await whoison(message)
@@ -222,15 +239,6 @@ async def on_message(message):
         await off(message)
 
     #Admin commands
-    if "!allon" in message.content.lower() and "admin" in [y.name.lower() for y in message.author.roles]:
-        globalMap.clear()
-        for member in message.guild.members:
-            if member.name == "Orisa" or member.name == "Doom":
-                continue
-            globalMap[member.id] = datetime.datetime.now()
-        outputstr = "Admin command invoked by {}, everyone is on!".format(message.author.name)
-        await message.channel.send(outputstr)
-        writeToFile(outputstr)
 
     if "!alloff" in message.content.lower() and "admin" in  [y.name.lower() for y in message.author.roles]:
         globalMap.clear()
@@ -264,18 +272,16 @@ async def on_message(message):
         await group(message)
 
     if "!ungroup" in message.content.lower():
-        if message.author.name == "Orisa":
-            return
-        if message.author.id not in [*globalMap]:
+        if message.author not in [*globalMap]:
             outputstr = "{} is not online, therefore not part of any groups".format(message.author.name)
             await message.channel.send(outputstr)
             writeToFile(outputstr)
-        elif message.author.id not in [*allgrouped]:
+        elif message.author not in [*allgrouped]:
             outputstr = "{} was not part of a group".format(message.author.name)
             await message.channel.send(outputstr)
             writeToFile(outputstr)
         else:
-           await ungroup(message, message.author.id)
+           await ungroup(message, message.author)
 
     if "!whoisgrouped" in message.content.lower():
         if len(groupList) == 0:
@@ -308,34 +314,6 @@ async def on_message(message):
     
     if message.content.lower() == "x":
         await message.channel.send("{} has assembled the X-Men!".format(message.author.name))
-
-    if "!" in message.content.lower() and "cute" in message.content.lower():
-        unformattedName = message.content.lower().split('cute')[0][1:]
-        
-        if unformattedName.lower() == "taco":
-            await message.channel.send("Taco is no longer ugly")
-            return
-        elif unformattedName.lower() == "cum":
-            await message.channel.send("Cum is no longer ugly")
-            return
-        elif unformattedName.lower() == "evixx":
-            await message.channel.send("Evixx was never ugly!")
-            return
-        elif unformattedName.lower() == "pants":
-            await message.channel.send("YOU DARE TRY TO IMPLY THAT OUR LORD AND SAVIOR IS UGLY?!")
-            return 
-        
-        for member in message.guild.members:
-            if unformattedName.lower() in str(member.name).lower():
-                if str(member.name) in ['Dj_RealMeal', 'trippymcgee', 'Ibonal (E-Bot)']:
-                    await message.channel.send("{} was never ugly!".format(member.name))
-                    return
-                await message.channel.send("{} is no longer ugly".format(member.name))
-                return
-        
-        await message.channel.send("Idk who you're talking about but you, {}, are very cute".format(message.author.name))
-        
-
 
 
 @client.event

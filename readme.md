@@ -6,9 +6,7 @@ List of instructions and general information about Orisa. The code lives [here](
 
 **Current Version:**
 
-    beta - 1.1.0 (currently testing)
-
-    stable - 1.0.10
+    stable - 1.1.1
 
 ## Getting Started
 
@@ -86,7 +84,9 @@ You can now form groups, be included in groups and will be considered for captai
 
 * **Arguments**
     
-    `@a_user` - set someone else's status as online (Admin ONLY)  
+    *Optional*
+
+    * `@a_user`         - (Admin ONLY) set someone else's status as online   
 
 * **Usage**
     
@@ -103,6 +103,34 @@ You can now form groups, be included in groups and will be considered for captai
         Admin command invoked by Zoid
         SampleUser is now online!
 
+
+## !smurf
+Sets your status to online and notifies the server that you are using a smurf account
+
+If already online, just changes your status to smurf.
+You can now form groups, be included in groups and will be considered for captaincy during practice.
+
+* **Arguments**
+    
+    _None_
+
+* **Usage**
+    
+    _For All Users_
+
+        > !on
+
+        Zoid is now online!
+
+        > !smurf 
+
+        Zoid is now smurfing
+
+        > !smurf
+
+        SampleUser is now online!
+        SampleUser is now smurfing
+
 ## !whoison
 Shows a list of all online players
 
@@ -116,7 +144,7 @@ Shows a list of all online players
 
         > !whoison
 
-        Zoid has been on for 0:00:57
+        Zoid (smurf) has been on for 0:00:57
         SampleUser has been on for 0:00:21
         Bastion has been on for 0:00:03
 
@@ -144,23 +172,6 @@ You are automatically removed from any groups and will not be considered for cap
 
         Admin command invoked by Zoid
         SampleUser is now offline!
-
-
-
-## !allon
-(Admin ONLY) Sets all members' statuses to online
-
-* **Arguments**
-    
-    _None_
-
-* **Usage**
-    
-    _For Admin_
-        
-        > !allon
-
-        Admin command invoked by Zoid, everyone is on!
 
 
 ## !alloff
@@ -413,31 +424,21 @@ Case insensitive - x = X / a = A
 
         Zoid has assembled the X-Men!
 
-## !{name}cute
-Returns a message about the cuteness of user with {name}
-
-* **Arguments**
-    
-    (_Required_) name - this would be the na me of a person on the team
-    * The name must be something you would call out during a game and not necessarily their discord name/nickname
-
-* **Usage**
-    
-    _For All Users_
-
-        > !zoidcute
-
-        Zoid is no longer ugly
-
-        > !ibcute
-
-        Ibonal (E-Bot) was never ugly!
-
-* **Hint** - try !pantscute
 
 ***
 
 ## What's New?
+
+* **Version 1.1.1**
+
+    1.1.1 brings about a much needed codebase change thanks to which, the bot should be a little faster. However, due to these changes, some features have been removed
+
+    New Features
+    * [`!smurf`](#smurf) - notifies the server that you have switched to a smurf account
+
+    Depricated Features
+    * `!allon` - allon was unused and there was not much usage in its future
+    * `!{name}cute` - due to permission issues with discord, there were some issues with the proper functioning of this feature. Since it wasn't used as often and misc, it was removed. 
 
 * **Introducing Docs!**
 
