@@ -9,7 +9,7 @@ from modules.practice import practice
 
 
 # Currently Running : Bastion
-TOKEN = '' #Your token here 
+TOKEN = 'Njg1NjQyNzQwNzg4MTAxMTQx.XmLokA.mZr4qqExbhDAfDMPSDFmecaskII' #Your token here 
 
 client = discord.Client()
 filename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".log"
@@ -262,7 +262,7 @@ async def on_message(message):
         await message.channel.send(outputstr)
         writeToFile(outputstr)
     
-    if "!needhealing" in message.content.lower(): 
+    if "!needhealing" in message.content.lower() or "!ineedhealing" in message.content.lower(): 
         outputstr = "Hi, I'm Orisa, a bot made by Zoid to automate the boring stuff on this server. For a full list of commands and documentation follow the link below \n"
         outputstr += "https://bhavdeepsinghb.github.io/OrisaBot"
         await message.channel.send(outputstr)

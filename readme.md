@@ -6,7 +6,7 @@ List of instructions and general information about Orisa. The code lives [here](
 
 **Current Version:**
 
-    stable - 1.1.1
+    stable - 1.1.1-1
 
 ## Getting Started
 
@@ -32,7 +32,7 @@ In the most basic sense, you will be using these three commands the most, howeve
 
 ## Basics
 ****
-## !help
+## !needhealing or !ineedhealing
     
 Gives you a link to this page
 
@@ -428,6 +428,14 @@ Case insensitive - x = X / a = A
 ***
 
 ## What's New?
+
+* **Patch 1.1.1-1**
+
+    Bug fixes
+    * Fixed a bug that displayed user objects instead of names when using `!whoisgrouped`
+    
+    Changes
+    * `!help` has been renamed to `!needhealing` or `!ineedhealing` (both work, case insensitive) since it was interrupting other bots' help message
 
 * **Version 1.1.1**
 
