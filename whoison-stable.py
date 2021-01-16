@@ -9,7 +9,7 @@ from modules.practice import practice
 
 
 # Currently Running : Bastion
-TOKEN = 'Njg1NjQyNzQwNzg4MTAxMTQx.XmLokA.hgfFQD7tW9hNo96XyNkSJJDF568' #Your token here 
+TOKEN = '' #Your token here 
 
 client = discord.Client()
 filename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".log"
