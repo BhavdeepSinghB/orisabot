@@ -9,7 +9,7 @@ from modules.practice import practice
 
 
 # Currently Running : Bastion
-TOKEN = '#' #Your token here 
+TOKEN = 'Njg1NjQyNzQwNzg4MTAxMTQx.XmLokA.hgfFQD7tW9hNo96XyNkSJJDF568' #Your token here 
 
 client = discord.Client()
 filename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".log"
@@ -262,7 +262,7 @@ async def on_message(message):
         await message.channel.send(outputstr)
         writeToFile(outputstr)
     
-    if "!help" in message.content.lower(): 
+    if "!needhealing" in message.content.lower(): 
         outputstr = "Hi, I'm Orisa, a bot made by Zoid to automate the boring stuff on this server. For a full list of commands and documentation follow the link below \n"
         outputstr += "https://bhavdeepsinghb.github.io/OrisaBot"
         await message.channel.send(outputstr)
@@ -288,8 +288,12 @@ async def on_message(message):
             await message.channel.send("There are no active groups, type !group @<user> or [a list of users] to start grouping up!")
         else:
             await message.channel.send("The following is a list of all groups")
+            nickList = []
             for i in groupList:
-                await message.channel.send("{}) {}".format(groupList.index(i) + 1, i))
+                nickList = []
+                for x in i:
+                    nickList.append(x.nick if x.nick is not None else x.name)
+                await message.channel.send("{}) {}".format(groupList.index(i) + 1, nickList))
         writeToFile("{} invoked whoisgrouped command. Returned {} results".format(message.author.name, len(groupList)))
 
     # Admin command for destroying groups
