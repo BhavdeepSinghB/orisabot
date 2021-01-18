@@ -7,6 +7,7 @@ List of instructions and general information about Orisa. The code lives [here](
 **Current Version:**
 
     stable - 1.1.1-1
+    beta   - 1.1.2   *
 
 ## Getting Started
 
@@ -428,6 +429,16 @@ Case insensitive - x = X / a = A
 ***
 
 ## What's New?
+
+* **Beta 1.1.2**
+
+    First new feature in a while and a couple of bug fixes
+
+    New Features
+    * Role Management - Roles means access and Orisa can now control roles. Currently being used to assign new members the "Friend" role once they have read and agreed to the rules.
+
+    Bug Fixes
+    * Logging issue with the Admin version of `!on` had an issue, fixed
 
 * **Patch 1.1.1-1**
 

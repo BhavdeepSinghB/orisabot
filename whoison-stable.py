@@ -8,8 +8,8 @@ from modules.practice import practice
 
 
 
-# Currently Running : Bastion
-TOKEN = '' #Your token here 
+# Currently Running : Off
+TOKEN = '#' #Your token here 
 
 client = discord.Client()
 filename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".log"
@@ -64,6 +64,7 @@ async def on(message):
                 globalMap[i] = datetime.datetime.now()
                 outputstr = "{} is now online!".format(i.name)
                 await message.channel.send(outputstr)
+                writeToFile(outputstr)
         else:
             outputstr = "Sorry, {}, you do not have admin privellages!, you cannot invoke off or on for other users".format(message.author.name)
             await message.channel.send(outputstr)

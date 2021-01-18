@@ -5,10 +5,12 @@ import random
 import asyncio
 import copy
 from modules.practice import practice
+from discord.utils import get
 
 
 
-# Currently Running : Bastion
+# Currently Running : Orisa
+# Bot Configuration
 TOKEN = '#' #Your token here 
 
 client = discord.Client()
@@ -64,6 +66,7 @@ async def on(message):
                 globalMap[i] = datetime.datetime.now()
                 outputstr = "{} is now online!".format(i.name)
                 await message.channel.send(outputstr)
+                writeToFile(outputstr)
         else:
             outputstr = "Sorry, {}, you do not have admin privellages!, you cannot invoke off or on for other users".format(message.author.name)
             await message.channel.send(outputstr)
@@ -262,7 +265,7 @@ async def on_message(message):
         await message.channel.send(outputstr)
         writeToFile(outputstr)
     
-    if "!help" in message.content.lower(): 
+    if "!needhealing" in message.content.lower() or "!ineedhealing" in message.content.lower(): 
         outputstr = "Hi, I'm Orisa, a bot made by Zoid to automate the boring stuff on this server. For a full list of commands and documentation follow the link below \n"
         outputstr += "https://bhavdeepsinghb.github.io/OrisaBot"
         await message.channel.send(outputstr)
@@ -288,8 +291,12 @@ async def on_message(message):
             await message.channel.send("There are no active groups, type !group @<user> or [a list of users] to start grouping up!")
         else:
             await message.channel.send("The following is a list of all groups")
+            nickList = []
             for i in groupList:
-                await message.channel.send("{}) {}".format(groupList.index(i) + 1, i))
+                nickList = []
+                for x in i:
+                    nickList.append(x.nick if x.nick is not None else x.name)
+                await message.channel.send("{}) {}".format(groupList.index(i) + 1, nickList))
         writeToFile("{} invoked whoisgrouped command. Returned {} results".format(message.author.name, len(groupList)))
 
     # Admin command for destroying groups
@@ -319,7 +326,23 @@ async def on_message(message):
 @client.event
 async def on_ready():
     print("Ready")
-
+    channelID =  # welcome
+    channel = client.get_channel(channelID)
+    roleID =  # friend
+    role = get(client.guilds[0].roles, id=roleID)
+    message = await channel.send("React to this message with ✅ to accept the rules and access the server")
+    
+    def check(reaction, user):
+            return str(reaction.emoji) == '✅' and user != message.author
+    
+    while True:
+        await message.add_reaction('✅')
+        user = (await client.wait_for('reaction_add', check=check))[1]    
+        await message.remove_reaction('✅', user)
+        await user.add_roles(role)
+        outputstr = "Gave the {} role to {}".format(role.name, user.name)
+        print(outputstr)
+        writeToFile(outputstr)
 
 client.run(TOKEN)
 
