@@ -435,10 +435,11 @@ Case insensitive - x = X / a = A
     First new feature in a while and a couple of bug fixes
 
     New Features
-    * Role Management - Roles means access and Orisa can now control roles. Currently being used to assign new members the "Friend" role once they have read and agreed to the rules.
+    * Role Management - Roles means access and Orisa now has control over it. Currently being used to assign new members the "Friend" role once they have read and agreed to the rules.
 
     Bug Fixes
-    * Logging issue with the Admin version of `!on` had an issue, fixed
+    * Logging issue with the Admin version of `!on` had an issue       fixed
+    * Message reactions were having some issues upon reconnection      testing
 
 * **Patch 1.1.1-1**
 

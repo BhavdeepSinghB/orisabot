@@ -1,17 +1,12 @@
-import discord
-import datetime
-from prettytable import PrettyTable
-import random
-import asyncio
-import copy
+import discord, datetime, random, asyncio, copy, threading, time
 from modules.practice import practice
 from discord.utils import get
-
+from discord import NotFound
 
 
 # Currently Running : Orisa
 # Bot Configuration
-TOKEN = '#' #Your token here 
+TOKEN = '' #Your token here 
 
 client = discord.Client()
 filename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".log"
@@ -322,13 +317,24 @@ async def on_message(message):
     if message.content.lower() == "x":
         await message.channel.send("{} has assembled the X-Men!".format(message.author.name))
 
+async def remove_reaction_async(message, user):
+    while(len(message.reactions) > 1):
+        time.sleep(5)
+        await message.remove_reaction('✅', user)
+
+def remove_reaction_sync(message, user):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    loop.run_until_complete(remove_reaction_async(message, user))
+    loop.close()
 
 @client.event
 async def on_ready():
-    print("Ready")
-    channelID =  # welcome
+    print("Live")
+    channelID = 800499934365220864 # welcome
     channel = client.get_channel(channelID)
-    roleID =  # friend
+    roleID = 800501133642170388 # friend
     role = get(client.guilds[0].roles, id=roleID)
     message = await channel.send("React to this message with ✅ to accept the rules and access the server")
     
@@ -338,11 +344,16 @@ async def on_ready():
     while True:
         await message.add_reaction('✅')
         user = (await client.wait_for('reaction_add', check=check))[1]    
-        await message.remove_reaction('✅', user)
-        await user.add_roles(role)
-        outputstr = "Gave the {} role to {}".format(role.name, user.name)
-        print(outputstr)
-        writeToFile(outputstr)
+        try:
+            await message.remove_reaction('✅', user)
+        except NotFound:
+            writeToFile("Error, message not found")
+            _thread = threading.Thread(target=remove_reaction_sync, args=(message, user))
+            _thread.start
+        finally:
+            await user.add_roles(role)
+            outputstr = "Gave the {} role to {}".format(role.name, user.name)
+            writeToFile(outputstr)
 
 client.run(TOKEN)
 
