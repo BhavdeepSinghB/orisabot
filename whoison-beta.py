@@ -8,7 +8,7 @@ from modules.tables import SpreadService
 
 # Currently Running : Bastion 1.2
 # Bot Configuration
-TOKEN = 'Njg3Nzk4OTY4NjA4MDk2NTU0.XmrAtA.MmivM0T4gowo02IcyEgAnex3IKg' #Your token here 
+TOKEN = '#' #Your token here 
 
 client = discord.Client()
 filename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".log"

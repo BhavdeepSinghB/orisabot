@@ -5,9 +5,9 @@ from discord.utils import get
 from discord import NotFound
 
 
-# Currently Running : Orisa
+# Currently Running : Orisa 1.1.2
 # Bot Configuration
-TOKEN = 'Njg1NjQyNzQwNzg4MTAxMTQx.XmLokA.j3fkFGjofHB7z_px3Cpe6NuBN3I' #Your token here 
+TOKEN = '#' #Your token here 
 
 client = discord.Client()
 filename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".log"
