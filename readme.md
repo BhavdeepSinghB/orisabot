@@ -6,8 +6,8 @@ List of instructions and general information about Orisa. The code lives [here](
 
 **Current Version:**
 
-    stable - 1.1.1-1
-    beta   - 1.1.2   *
+    stable - 1.1.2 [running]
+    beta   - 1.2   [building]
 
 ## Getting Started
 
@@ -430,7 +430,13 @@ Case insensitive - x = X / a = A
 
 ## What's New?
 
-* **Beta 1.1.2**
+* **Next Beta and 1.2**
+
+    The next whoison-beta update will introduce long term records in the form of connection to a google spreadsheet.
+    Users will be able to interact with the sheet through the bot and the sheet itself will take care of any necessary calculations.
+    This will later transition into an actual database and launch as a new version 1.2
+
+* **Beta 1.1.2 is now Stable 1.1.2**
 
     First new feature in a while and a couple of bug fixes
 
