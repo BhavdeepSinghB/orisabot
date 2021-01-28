@@ -3,10 +3,10 @@ from modules.practice import practice
 from modules.utils import writeToFile
 from discord.utils import get
 from discord import NotFound
-from modules.tables import SpreadService
+from modules.tables import DBService
 
 
-# Currently Running : Bastion 1.2
+# Current Version : Orisa 1.2
 # Bot Configuration
 TOKEN = '#' #Your token here 
 
@@ -19,7 +19,7 @@ numBugs = 0 # number of bugs reported
 allgrouped = {} # dict {id : group number}
 groupList = [] # list of lists groupList : [ [ users ] ]
 smurfList = [] # list of all online smurf accounts
-spreadservice = SpreadService()
+dbservice = DBService()
 
 def isGrouped(userID):
     if userID in [*allgrouped]:
@@ -211,7 +211,7 @@ async def bug(message):
 async def on_message(message):
     global numInstr
     global numBugs
-    global spreadservice
+    global dbservice
 
     if message.author == client.user:
             return
@@ -306,14 +306,20 @@ async def on_message(message):
     
     if "!sr" in message.content.lower():
         if "team member" in [y.name.lower() for y in message.author.roles]:
-            await spreadservice.sr(message)
+            await dbservice.sr(message)
         else:
             outputstr = "Sorry, {}. You'll have to be a team member to do that".format(message.author.name)
             await message.channel.send(outputstr)
     
     if "!set" in message.content.lower():
         if "team member" in [y.name.lower() for y in message.author.roles]:
-            await spreadservice.set(message)
+            await dbservice.set(message)
+        else:
+            outputstr = "Sorry, {}. You'll have to be a team member to do that"
+
+    if "!register" in message.content.lower():
+        if "team member" in [y.name.lower() for y in message.author.roles]:
+            await dbservice.register(message)
         else:
             outputstr = "Sorry, {}. You'll have to be a team member to do that"
 
@@ -343,10 +349,33 @@ def remove_reaction_sync(message, user):
 @client.event
 async def on_ready():
     print("Live")
-    global spreadservice
+    global dbservice
     global filename
 
-    spreadservice = await SpreadService.construct(filename)
+    dbservice = await DBService.construct(filename)
+
+    channelID = 800499934365220864 # welcome
+    channel = client.get_channel(channelID)
+    roleID = 800501133642170388 # friend
+    role = get(client.guilds[0].roles, id=roleID)
+    message = await channel.send("React to this message with ✅ to accept the rules and access the server")
+    
+    def check(reaction, user):
+            return str(reaction.emoji) == '✅' and user != message.author
+    
+    while True:
+        await message.add_reaction('✅')
+        user = (await client.wait_for('reaction_add', check=check))[1]    
+        try:
+            await message.remove_reaction('✅', user)
+        except NotFound:
+            writeToFile(filename, "Error, message not found")
+            _thread = threading.Thread(target=remove_reaction_sync, args=(message, user))
+            _thread.start
+        finally:
+            await user.add_roles(role)
+            outputstr = "Gave the {} role to {}".format(role.name, user.name)
+            writeToFile(filename, outputstr)
     
 
 client.run(TOKEN)

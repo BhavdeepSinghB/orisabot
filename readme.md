@@ -27,6 +27,7 @@ In the most basic sense, you will be using these three commands the most, howeve
 
 * [**Basics**](#basics)
 * [**Grouping**](#grouping)
+* [**SR**](#sr)
 * [**Practice**](#practice)
 * [**Bug Reporting**](#bug-reporting)
 * [**Misc**](#misc)
@@ -297,6 +298,117 @@ If there was just one other person in your group, they are ungrouped too and you
         Ibonal (E-Bot) has been removed from the group
         Ibonal (E-Bot)'s group has been destroyed, z99ghostrider has now been ungrouped
 
+## SR
+****
+
+## !register {user}
+
+Adds a new database entry for the user, if none existed. 
+
+* **User Validity**
+    
+    A user is consiered valid if they are a **team member** and not already in the database.
+
+* **Arguments**
+    
+    (_Optional_) (Admin ONLY) User to register.
+
+* **Usage**
+    
+    _For Valid Users_
+
+        > !register
+
+        Successfully added new database entry for SampleUser
+        Please set your SR using !set <role> <sr>
+        For more commands use !sr --help
+
+        > !register
+        
+        Zoid is already registered. Type !sr @username for more
+
+
+## !sr {user} 
+Shows a list of all active groups
+
+* **Arguments**
+
+    *Optional*
+    
+    * {user} - Returns the specified user's SR, if it exists
+    * `--help` - Shows a quick list of all available commands  
+    * `-team` - Shows team's average SR 
+        * `-v` - Shows more team average statistics
+
+
+* **Usage**
+    
+    _For All Users_
+
+        > !sr
+
+        For user SampleUser
+        Tank: 1100
+        Damage: 2334
+        Support: 1242
+
+        > !sr @Zoid
+
+        For user Zoid
+        Tank: None
+        Damage: 2754
+        Support: None
+
+        > !sr -team
+
+        Team Average SR: 2318.00
+
+        Please note that this is based on the provided data so far. Type !sr --help for commands.
+
+        > !sr --help
+
+        If you're a new user, type !register to start!
+
+        To check your sr, type !sr
+        To set your sr, type !set <role> <sr>
+        ...
+
+
+## !set {user} <role> <SR>
+If you were in a group, removes you.
+
+If there was just one other person in your group, they are ungrouped too and your group is destroyed.
+
+* **Arguments**
+
+    *Required*
+    
+    * `role` - List of acceptable roles: []  
+    * `SR` - The SR you wish to set for the role 
+
+    *Optional*
+
+    * {user} - (Admin ONLY) sets the SR for the specified user. If they're registered
+
+* **Usage**
+    
+    _For All Users_
+
+        > !set tank 1100
+
+        Successfully changed SampleUser's tank SR to 1100
+        For user SampleUser
+        Tank: 1100
+        Damage: None
+        Support: None
+
+        > !set @SampleUser support 1242 
+
+        Successfully changed SampleUser's support SR to 1242
+        For user SampleUser
+        Tank: 1100
+        Damage: None
+        Support: 1242
 
 
 ## Practice
@@ -432,7 +544,7 @@ Case insensitive - x = X / a = A
 
 * **Next Beta and 1.2**
 
-    The next whoison-beta update will introduce long term records in the form of connection to a google spreadsheet.
+    The next whoison-beta update 1.1.3 will introduce long term records in the form of connection to a google spreadsheet.
     Users will be able to interact with the sheet through the bot and the sheet itself will take care of any necessary calculations.
     This will later transition into an actual database and launch as a new version 1.2
 

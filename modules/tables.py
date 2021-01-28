@@ -1,75 +1,183 @@
-import gspread, asyncio, copy, os
-from oauth2client.service_account import ServiceAccountCredentials
+import sqlite3, asyncio, statistics
 from modules.utils import writeToFile
 
-class SpreadService:
+class DBService:
     # Variables
-    __sheet = None
+    __cursor = None
     __filename = None
-    __index_dict = {}
-    __lastID = -1
+    __table_name = ""
     
     @classmethod
     async def construct(cls, filename):
-        self = SpreadService()
+        self = DBService()
         
         self.__filename = filename
 
-        scope = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-        creds = ServiceAccountCredentials.from_json_keyfile_name('modules/client_secret.json', scope)
-        client = gspread.authorize(creds)
-         
-        self.__sheet = client.open("Overwatch Team SR").sheet1
+        conn = sqlite3.connect('overwatch_team.db')
+        if conn == None:
+            writeToFile(self.__filename, "Error connecting to database")
+            return
+        
+        self.__cursor = conn.cursor()
 
-        for i in self.__sheet.get_all_records():
-            try:
-                self.__index_dict[i['Name']] = int(i['ID']) + 1 
-            except ValueError:
-                continue
-        self.__lastID = sorted(self.__index_dict.keys())[-1]
-        outputstr = "Successfully constructed SpreadService"
+        outputstr = "Successfully constructed DBService"
         print(outputstr)
         writeToFile(self.__filename, outputstr)
-
+        self.__table_name = "srdata"
         return self
 
-    async def sr(self, message):
-        sheet = self.__sheet
-        if "-team" in message.content.lower():
-            records = sheet.get_all_records()
-            averageDict = records[-1] #average is the last row in the sheet
-            outputstr = "Team Averages for {}\n".format(message.guild.name)
-            try:
-                outputstr += "Average Team SR (based on highest role) : {:.2f}\n".format(averageDict['Highest SR'])
-                outputstr += "Tank average : {:.2f}\n".format(averageDict['Tank'])
-                outputstr += "DPS average : {:.2f}\n".format(averageDict['DPS'])
-                outputstr += "Support average : {:.2f}\n".format(averageDict['Support'])
-                await message.channel.send(outputstr)
-                writeToFile(self.__filename, outputstr)
-            except KeyError as e:
-                writeToFile("Error reporting SR: {}".format(e))
-            return    
+    async def register(self, message):
+        c = self.__cursor
+        person = message.author
+        if len(message.mentions) > 0 and "admin" in [y.name.lower() for y in message.author.roles]:
+            person = message.mentions[0]
+        
+        if "based" in [y.name.lower() for y in message.author.roles]:
+            outputstr = "{} is already registered. Type `!sr @username` for more".format(person.name)
+            await message.channel.send(outputstr)
+            writeToFile(self.__filename, "[{}] ".format(message.author.name) + outputstr)
+            return
+        
+        query = "INSERT INTO {} (name) VALUES ('{}')".format(self.__table_name, person.name)
+        if not c.execute(query):
+            outputstr = "There's been an error and it has been reported. Please try again, later"
+            await message.channel.send(outputstr)
+            outputstr = "Error in executing query {}".format(query)
+            return
 
-        index_dict = self.__index_dict
-        mentionList = message.mentions
-        if mentionList is None or len(mentionList) == 0:
-            mentionList.append(message.author)
-        for i in mentionList:
-            try:
-                outputstr = "SR for {} for Season {}\n".format(i.nick if i.nick is not None else i.name, sheet.acell('B{}'.format(index_dict[i.name])).value)
-                outputstr += "Tank : {}\n".format(sheet.acell('C{}'.format(index_dict[i.name])).value)
-                outputstr += "Damage : {}\n".format(sheet.acell('D{}'.format(index_dict[i.name])).value)
-                outputstr += "Support : {}\n".format(sheet.acell('E{}'.format(index_dict[i.name])).value)
-                await message.channel.send(outputstr)
-                writeToFile(self.__filename, outputstr)
-            except KeyError as e:
-                outputstr = "Whoops! Seems like I can't find any data for {}. Are you sure you're registered? Use !register to add yourself to the database".format(i.name)
-                await message.channel.send(outputstr)
-                outputstr = "Error reporting SR : {}".format(e)
-                writeToFile(self.__filename, outputstr)
+        outputstr = "Successfully added new database entry for {}\n".format(person.name)
+        writeToFile(self.__filename, outputstr)
+        
+        outputstr += "Please set your SR using `!set <role> <sr>`\n"
+        outputstr += "For more commands use `!sr --help`"
+
+        await message.channel.send(outputstr)
+
+
     
+    async def sr_help(self, message):
+        outputstr = "If you're a **new user**, type `!register` to start!\n\n"
+        outputstr += "To **check your sr**, type `!sr`\n"
+        outputstr += "To **set your sr**, type `!set <role> <sr>`\n"
+        outputstr += "To **check the team's sr**, type `!sr -team (-v)---optional`\n"
+        await message.channel.send(outputstr)
+        outputstr = "To **check someone else's sr**, type `!sr @username`\n"
+        outputstr += "To **set someone else's sr (admin)**, type `!set @user <role> <sr>`\n"
+        outputstr += "To repeat this message, type `!sr --help`\n"
+        outputstr += "For full help on the bot, type `!ineedhealing`\n"
+        await message.channel.send(outputstr)
+    
+    async def sr(self, message):
+        c = self.__cursor
+        if "--help" in message.content.lower() or "-help" in message.content.lower():
+            await self.sr_help(message)
+            return
+
+        if "-team" in message.content.lower():
+            c.execute("SELECT * FROM {}".format(self.__table_name))
+            highestList = []
+            everyone = c.fetchall()
+            for i in everyone:
+                high = 0
+                for j in i[2:]:
+                    if j is None:
+                        continue
+                    if int(j) > high:
+                        high = int(j)
+                highestList.append(high)
+            team_average = statistics.mean(highestList)
+            median = statistics.median(highestList)
+            standard_dev = statistics.stdev(highestList)
+            outputstr = "**Team Average SR: {:.2f}**\n".format(team_average)
+            if "-v" in message.content.lower():
+                outputstr += "Median (exact middle) SR: {:.2f}\n".format(median)
+                outputstr += "Standard Deviation: {:.2f}\n".format(standard_dev)
+            writeToFile(self.__filename, "[{}]".format(message.author.name) + outputstr)
+            outputstr += "\nPlease note that this is based on the provided data so far. Type !sr --help for commands."
+            await message.channel.send(outputstr)
+            return
+    
+        person = message.author.name
+        if len(message.mentions) > 0:
+            person = message.mentions[0].name
+            writeToFile(self.__filename, "[{}] invoked !sr for {}".format(message.author.name, person))
+        
+        query = "SELECT * FROM {} WHERE name  = '{}'".format(self.__table_name, person)
+        if not c.execute(query):
+            outputstr = "There's been an error and it has been reported. Please try again, later"
+            await message.channel.send(outputstr)
+            outputstr = "Error in executing query {}".format(query)
+            return
+
+        user = c.fetchall()
+        if len(user) == 0:
+            outputstr = "No results found for {}, please register using `!register`".format(person)
+            await message.channel.send(outputstr)
+            writeToFile(self.__filename, outputstr)
+            return
+
+        user = user[0]
+        high = 0
+        high_index = 0
+        for i in user[2:]:
+            if i is not None and int(i) > high:
+                high = int(i)
+                high_index = user.index(i)
+        
+        outputstr = "For user **{}**\n".format(person)
+        
+        outputstr += "**Tank: {}**\n".format(user[2]) if high_index == 2 else "Tank: {}\n".format(user[2])
+        outputstr += "**Damage: {}**\n".format(user[3]) if high_index == 3 else "Damage: {}\n".format(user[3])
+        outputstr += "**Support: {}**\n".format(user[4]) if high_index == 4 else "Support: {}\n".format(user[4])
+
+        await message.channel.send(outputstr)
+        writeToFile(self.__filename, outputstr)
+         
+    
+    async def parse_set_query(self, message):
+        args = message.content.split(' ')
+        
+        try:
+            role = args[-2]
+        except IndexError:
+            outputstr = "Usage: !set {@user} role <sr>"
+            writeToFile(self.__filename, "[{}]".format(message.author.name) + outputstr)
+            outputstr += "\nList of acceptable roles - 'tank', 'dps', 'damage', 'dmg', 'support', 'heals'"
+            await message.channel.send(outputstr)
+            return []
+
+        roleList = ['tank', 'dps', 'damage', 'dmg', 'support', 'heals']
+        
+        if not role in roleList:
+            outputstr = "Usage: !set {@user} role <sr>"
+            writeToFile(self.__filename, "{}: ".format(message.author.name) + outputstr)
+            outputstr += "\nList of acceptable roles - ['tank', 'dps', 'damage', 'dmg', 'support', 'heals']"
+            await message.channel.send(outputstr)
+            return []
+        
+        try:
+            if len(args[-1]) != 4:
+                outputstr = "Please make sure the SR is a 4 digit number"
+                await message.channel.send(outputstr)
+                writeToFile(self.__filename, outputstr)
+                return []
+            newSR = int(args[-1])
+        except ValueError:
+            outputstr = "Please make sure the SR is correctly written as the last part of the message"
+            writeToFile(self.__filename, "Invoked by {}: ".format(message.author.name) + outputstr)
+            await message.channel.send(outputstr)
+            return []
+        
+        if newSR < 0:
+            outputstr = "{}, please make sure the SR is a positive number".format(message.author.name)
+            writeToFile(self.__filename, outputstr)
+            await message.channel.send(outputstr)
+            return []
+
+        return [newSR, role]
+
     async def set(self, message):
-        sheet = self.__sheet
+        c = self.__cursor
         
         mentions = message.mentions
         if len(mentions) > 0:
@@ -83,63 +191,45 @@ class SpreadService:
         else:
             user = message.author
         
-        args = message.content.split(' ')
-        
         try:
-            role = args[-2]
-        except IndexError as e:
-            outputstr = "Usage: !set {@user} role <sr>"
-            writeToFile(self.__filename, "{}: ".format(message.author.name) + outputstr)
-            outputstr += "\nList of acceptable roles - ['tank', 'dps', 'damage', 'dmg', 'support', 'heals']"
-            await message.channel.send(outputstr)
-            return
-
-        roleList = ['tank', 'dps', 'damage', 'dmg', 'support', 'heals']
-        
-        if not role in roleList:
-            outputstr = "Usage: !set {@user} role <sr>"
-            writeToFile(self.__filename, "{}: ".format(message.author.name) + outputstr)
-            outputstr += "\nList of acceptable roles - ['tank', 'dps', 'damage', 'dmg', 'support', 'heals']"
-            await message.channel.send(outputstr)
-            return
-        
-        try:
-            newSR = int(args[-1])
+            newSR, role = await self.parse_set_query(message)
         except ValueError:
-            outputstr = "Please make sure the SR is correctly written as the last part of the message"
-            writeToFile(self.__filename, "Invoked by {}: ".format(message.author.name) + outputstr)
-            await message.channel.send(outputstr)
             return
+
+        person = user.name
         
-        if newSR < 0:
-            outputstr = "{}, please make sure the SR is a positive number".format(message.author.name)
-            writeToFile(self.__filename, outputstr)
+        query = "SELECT * FROM {} WHERE name = '{}'".format(self.__table_name, person)
+        if not c.execute(query):
+            outputstr = "There's been an error and it has been reported. Please try again, later"
             await message.channel.send(outputstr)
+            outputstr = "Error in executing query {}".format(query)
             return
-        
-        if user.name not in self.__index_dict.keys():
-            outputstr = "Whoops I can't find any details for {}. If you're not registered, type !register to start!".format(user.name)
+
+        user = c.fetchall()
+
+        if len(user) == 0:
+            outputstr = "Whoops I can't find any details for {}. If you're not registered, type `!register` to start!".format(person)
             writeToFile(self.__filename, outputstr)
             await message.channel.send(outputstr)
             return
 
-        # At this point, user and SR should be verified. Figure out the cell
-        if role == 'tank':
-            cell = "C"
-        elif role in ('dps', 'damage', 'dmg'):
-            cell = "D"
-        else:
-            cell = "E"
+        user = user[0]
 
-        try:
-            cell += str(self.__index_dict[user.name])
-        except KeyError as e:
-            await message.channel.send("This is embarassing. I'm not sure what went wrong, but something did. Please try later")
-            writeToFile(self.__filename, "Error in user validation {}".format(e))
+        
+        if role in ('dps', 'dmg'):
+            role = "damage"
+        elif role == "heals":
+            role = "support"
+
+        query = "UPDATE {} SET {} = {} WHERE name = '{}'".format(self.__table_name, role, newSR, person)
+        if not c.execute(query):
+            outputstr = "There's been an error and it has been reported. Please try again, later"
+            await message.channel.send(outputstr)
+            outputstr = "Error in executing query {}".format(query)
             return
         
-        sheet.update(cell, newSR)
-        outputstr = "Successfully changed {}'s {} SR to {}".format(user.name, role, newSR)
+        outputstr = "Successfully changed {}'s {} SR to {}".format(person, role, newSR)
         await message.channel.send(outputstr)
         writeToFile(self.__filename, outputstr)
-
+        await self.sr(message)
+        

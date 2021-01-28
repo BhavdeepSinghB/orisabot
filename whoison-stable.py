@@ -5,7 +5,7 @@ from discord.utils import get
 from discord import NotFound
 
 
-# Currently Running : Orisa 1.1.2
+# Current Version : Orisa 1.1.2
 # Bot Configuration
 TOKEN = '#' #Your token here 
 
