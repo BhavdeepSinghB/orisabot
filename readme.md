@@ -113,7 +113,9 @@ You can now form groups, be included in groups and will be considered for captai
 
 * **Arguments**
     
-    _None_
+    *Optional*
+
+    * `@a_user`         - (Admin ONLY) set someone else's status to smurfing    
 
 * **Usage**
     
