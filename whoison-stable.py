@@ -3,9 +3,10 @@ from modules.practice import practice
 from modules.utils import writeToFile
 from discord.utils import get
 from discord import NotFound
+from modules.tables import DBService
 
 
-# Current Version : Orisa 1.1.2
+# Current Version : Orisa 1.2.1
 # Bot Configuration
 TOKEN = '#' #Your token here 
 
@@ -18,6 +19,7 @@ numBugs = 0 # number of bugs reported
 allgrouped = {} # dict {id : group number}
 groupList = [] # list of lists groupList : [ [ users ] ]
 smurfList = [] # list of all online smurf accounts
+dbservice = DBService()
 
 def isGrouped(userID):
     if userID in [*allgrouped]:
@@ -203,12 +205,23 @@ async def bug(message):
     writeToFile(filename, outputstr)
     numBugs += 1
 
-
+async def smurf(message):
+    if len(message.mentions) > 0:
+        user = message.mentions[0]
+    else:
+        user = message.author
+    smurfList.append(user)
+    if user not in [*globalMap]:
+        await on(message)
+    outputstr = "{} is now smurfing".format(user.name)
+    await message.channel.send(outputstr)
+    writeToFile(filename, outputstr)
 
 @client.event
 async def on_message(message):
     global numInstr
     global numBugs
+    global dbservice
 
     if message.author == client.user:
             return
@@ -217,12 +230,7 @@ async def on_message(message):
         await on(message)
 
     if "!smurf" in message.content.lower():
-        smurfList.append(message.author)
-        if message.author not in [*globalMap]:
-            await on(message)
-        outputstr = "{} is now smurfing".format(message.author.name)
-        await message.channel.send(outputstr)
-        writeToFile(filename, outputstr)
+        await smurf(message)
 
     if message.content.lower() in ["!whoison", "!whoson", "!whoon", "!whothefuckison", "!whotfison"]:
         await whoison(message)
@@ -301,6 +309,26 @@ async def on_message(message):
         await bug(message)
     
     
+    if "!sr" in message.content.lower():
+        if "team member" in [y.name.lower() for y in message.author.roles]:
+            await dbservice.sr(message)
+        else:
+            outputstr = "Sorry, {}. You'll have to be a team member to do that".format(message.author.name)
+            await message.channel.send(outputstr)
+    
+    if "!set" in message.content.lower():
+        if "team member" in [y.name.lower() for y in message.author.roles]:
+            await dbservice.set(message)
+        else:
+            outputstr = "Sorry, {}. You'll have to be a team member to do that"
+
+    if "!register" in message.content.lower():
+        if "team member" in [y.name.lower() for y in message.author.roles]:
+            await dbservice.register(message)
+        else:
+            outputstr = "Sorry, {}. You'll have to be a team member to do that"
+
+
     #Misc - won't be written to log files
     if message.content.lower() == "f":
         await message.channel.send("{} has put some respecc on it".format(message.author.name))
@@ -326,6 +354,11 @@ def remove_reaction_sync(message, user):
 @client.event
 async def on_ready():
     print("Live")
+    global dbservice
+    global filename
+
+    dbservice = await DBService.construct(filename)
+
     channelID = 800499934365220864 # welcome
     channel = client.get_channel(channelID)
     roleID = 800501133642170388 # friend
@@ -348,6 +381,7 @@ async def on_ready():
             await user.add_roles(role)
             outputstr = "Gave the {} role to {}".format(role.name, user.name)
             writeToFile(filename, outputstr)
+    
 
 client.run(TOKEN)
 

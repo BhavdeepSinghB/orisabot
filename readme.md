@@ -6,8 +6,7 @@ List of instructions and general information about Orisa. The code lives [here](
 
 **Current Version:**
 
-    stable - 1.1.2 [running]
-    beta   - 1.2   [building]
+    stable - 1.2.1 [running]
 
 ## Getting Started
 
@@ -541,6 +540,10 @@ Case insensitive - x = X / a = A
 ***
 
 ## What's New?
+
+* **Minor Update 1.2.1**
+
+    `!smurf` has been updated to accept a user argument (optional). This allows `Admin`s to change the status of other people to smurfing
 
 * **Next Beta and 1.2**
 
