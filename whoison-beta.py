@@ -8,7 +8,7 @@ from modules.tables import DBService
 
 # Current Version : Alfred 1.2.2
 # Bot Configuration
-TOKEN = '#' #Your token here 
+TOKEN = 'Njg1NjQyNzQwNzg4MTAxMTQx.XmLokA.Zh0B0s08dxFAcbW1WoUi6d2lO9o' #Your token here 
 client = discord.Client()
 filename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".log"
 globalMap = {} # dict {user : datetime}
@@ -55,8 +55,9 @@ async def notify(message, user, outputstr):
         if obj in notifyDict.keys():
             # if yes, notify each user in the list
             for i in notifyDict[obj]:
-                await i.send(outputstr)
-                # remove user once notified, avoiding spam
+                if not i == user:
+                    await i.send(outputstr)
+                # remove user, avoiding spam
                 notifyDict[obj].remove(i)
 
 async def on(message):
