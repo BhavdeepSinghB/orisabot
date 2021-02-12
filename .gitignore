@@ -1,3 +1,4 @@
 modules/_pycache_/*
 modules/client_secret.json
 overwatch_team.db*
+*.log

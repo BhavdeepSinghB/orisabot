@@ -176,6 +176,33 @@ You are automatically removed from any groups and will not be considered for cap
         Admin command invoked by Zoid
         SampleUser is now offline!
 
+## !lmk
+Sets your status to online and notifies the server that you are using a smurf account
+
+If already online, just changes your status to smurf.
+You can now form groups, be included in groups and will be considered for captaincy during practice.
+
+* **Arguments**
+    
+    *Optional*
+
+    * `@a_user`         - Be notified when specified user sets their status to `!on`
+
+* **Usage**
+    
+    _For All Users_
+
+        > !lmk
+
+        SampleUser will be notified the next time someone goes on
+
+        > !lmk @Zoid 
+
+        SampleUser will be notified the next time Zoid goes on
+
+        (Zoid) > !on 
+
+        (As a direct message) Zoid is now online!
 
 ## !alloff
 (Admin ONLY) Sets all members' statuses to offline and destroys any active groups

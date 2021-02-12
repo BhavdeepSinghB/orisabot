@@ -206,7 +206,7 @@ async def bug(message):
     numBugs += 1
 
 async def smurf(message):
-    if len(message.mentions) > 0:
+    if len(message.mentions) > 0 and "admin" in [y.name.lower() for y in message.author.roles]:
         user = message.mentions[0]
     else:
         user = message.author
