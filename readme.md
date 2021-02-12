@@ -6,7 +6,8 @@ List of instructions and general information about Orisa. The code lives [here](
 
 **Current Version:**
 
-    stable - 1.2.1 [running]
+    stable - 1.2.1
+    beta - 1.2.2 [testing on "The Order Of The Red Lotus"]
 
 ## Getting Started
 
@@ -570,6 +571,13 @@ Case insensitive - x = X / a = A
 
 ## What's New?
 
+* **Minor Update 1.2.2**
+
+    New feature! Be notified via DM the next time someone goes `!on`
+
+    New Features
+    * [`!lmk {@a_user}`](#lmk) - sends you a discord DM the next time someone (specified user optional) sets their status to `!on`
+
 * **Minor Update 1.2.1**
 
     `!smurf` has been updated to accept a user argument (optional). This allows `Admin`s to change the status of other people to smurfing
@@ -599,28 +607,6 @@ Case insensitive - x = X / a = A
     Changes
     * `!help` has been renamed to `!needhealing` or `!ineedhealing` (both work, case insensitive) since it was interrupting other bots' help message
 
-* **Version 1.1.1**
 
-    1.1.1 brings about a much needed codebase change thanks to which, the bot should be a little faster. However, due to these changes, some features have been removed
-
-    New Features
-    * [`!smurf`](#smurf) - notifies the server that you have switched to a smurf account
-
-    Depricated Features
-    * `!allon` - allon was unused and there was not much usage in its future
-    * `!{name}cute` - due to permission issues with discord, there were some issues with the proper functioning of this feature. Since it wasn't used as often and misc, it was removed. 
-
-* **Introducing Docs!**
-
-    Starting this version, all instructions, versions and updates will be documented! This instructions document was the first part of the process and will continue to be maintained as new instructions are added. With versioning, old versions of the bot will be archived to store depricated features. 
-
-* **Version 1.1.0!**
-
-    With the latest changes, Orisa enters its first notable update. 
-    
-    We've gone from being a small script called "whoison" to a full fledged multi function bot and it was time to act like an actual project by cleaning up and modularizing the code base. This was a start and will continue to be done in minor updates. 
-
-    New features
-    * [`!bug`](#bug) - reports a bug by pinging the developer and marking logfile location
     
     
