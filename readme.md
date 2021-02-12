@@ -178,10 +178,8 @@ You are automatically removed from any groups and will not be considered for cap
         SampleUser is now offline!
 
 ## !lmk
-Sets your status to online and notifies the server that you are using a smurf account
-
-If already online, just changes your status to smurf.
-You can now form groups, be included in groups and will be considered for captaincy during practice.
+Notifies the caller the next time someone goes online. 
+Ideal use case is for being notified when people are getting on around the same time.
 
 * **Arguments**
     
@@ -223,8 +221,7 @@ You can now form groups, be included in groups and will be considered for captai
 ## Grouping
 ****
 
-## !group {user/list of users}
-    
+## !group {user/list of users}    
 In order to use groups, please make sure you're online.
 
 *If ungrouped* - creates a new group of calling user + all valid mentioned users
@@ -330,8 +327,7 @@ If there was just one other person in your group, they are ungrouped too and you
 ## SR
 ****
 
-## !register {user}
-
+## !register
 Adds a new database entry for the user, if none existed. 
 
 * **User Validity**
@@ -357,8 +353,8 @@ Adds a new database entry for the user, if none existed.
         Zoid is already registered. Type !sr @username for more
 
 
-## !sr {user} 
-Shows a list of all active groups
+## !sr 
+Displays given user's most recently updated SR, if any
 
 * **Arguments**
 
@@ -403,16 +399,15 @@ Shows a list of all active groups
         ...
 
 
-## !set {user} <role> <SR>
-If you were in a group, removes you.
-
-If there was just one other person in your group, they are ungrouped too and your group is destroyed.
+## !set <role> <SR>
+Sets the SR for the given role for the given user.
+Refer to the list of acceptable roles and usage for correct syntax.
 
 * **Arguments**
 
     *Required*
     
-    * `role` - List of acceptable roles: []  
+    * `role` - List of acceptable roles: ['tank', 'dps', 'damage', 'dmg', 'support', 'heals']  
     * `SR` - The SR you wish to set for the role 
 
     *Optional*
