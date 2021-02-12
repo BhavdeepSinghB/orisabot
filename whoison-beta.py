@@ -8,7 +8,7 @@ from modules.tables import DBService
 
 # Current Version : Alfred 1.2.2
 # Bot Configuration
-TOKEN = 'Njg1NjQyNzQwNzg4MTAxMTQx.XmLokA.Zh0B0s08dxFAcbW1WoUi6d2lO9o' #Your token here 
+TOKEN = '#' #Your token here 
 client = discord.Client()
 filename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".log"
 globalMap = {} # dict {user : datetime}
