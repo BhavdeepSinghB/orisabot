@@ -1,12 +1,12 @@
 import discord, datetime, random, asyncio, copy, threading, time
+from discord import NotFound
+from modules.tables import DBService
 from modules.practice import practice
 from modules.utils import writeToFile
 from discord.utils import get
-from discord import NotFound
-from modules.tables import DBService
 
 
-# Current Version : Alfred 1.2.2
+# Current Version : Alfred 1.3
 # Bot Configuration
 TOKEN = '#' #Your token here 
 client = discord.Client()

@@ -6,10 +6,9 @@ from discord import NotFound
 from modules.tables import DBService
 
 
-# Current Version : Orisa 1.2.1
+# Current Version : Orisa 1.2.2
 # Bot Configuration
 TOKEN = '#' #Your token here 
-
 client = discord.Client()
 filename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".log"
 globalMap = {} # dict {user : datetime}
@@ -19,7 +18,10 @@ numBugs = 0 # number of bugs reported
 allgrouped = {} # dict {id : group number}
 groupList = [] # list of lists groupList : [ [ users ] ]
 smurfList = [] # list of all online smurf accounts
-dbservice = DBService()
+dbservice = DBService() # instance of DBService class
+notifyDict = {"All": []} # Dict user object : list of user objects that want to be notified for key
+
+
 
 def isGrouped(userID):
     if userID in [*allgrouped]:
@@ -45,6 +47,19 @@ async def ungroup(message, user):
             "{}'s group has been destroyed, {} has now been ungrouped".format(
                user.name, callerGroup[0].name))
 
+async def notify(message, user, outputstr):
+    # Include "All" since these people must be notified regardless
+    efficientTuple = ("All", user)
+    for obj in efficientTuple:
+        # Check if the user is in notify map
+        if obj in notifyDict.keys():
+            # if yes, notify each user in the list
+            for i in notifyDict[obj]:
+                if not i == user:
+                    await i.send(outputstr)
+                # remove user, avoiding spam
+                notifyDict[obj].remove(i)
+
 async def on(message):
     addedPerson = message.author
     mentions = message.mentions
@@ -56,6 +71,7 @@ async def on(message):
             for i in mentions:
                 globalMap[i] = datetime.datetime.now()
                 outputstr = "{} is now online!".format(i.name)
+                await notify(message, i, outputstr)
                 await message.channel.send(outputstr)
                 writeToFile(filename, outputstr)
         else:
@@ -66,9 +82,21 @@ async def on(message):
     else:
         globalMap[addedPerson] = datetime.datetime.now()        
         outputstr = "{} is now online!".format(message.author.name)
+        await notify(message, addedPerson, outputstr)
         await message.channel.send(outputstr)
         writeToFile(filename, outputstr)
 
+async def lmk(message):
+    notifier = "All"
+    if len(message.mentions) > 0:
+        notifier = message.mentions[0]
+    if notifier in notifyDict.keys():
+        notifyDict[notifier].append(message.author)
+    else:
+        notifyDict[notifier] = [message.author]
+    outputstr = "{} will be notified the next time {} goes on".format(message.author.name, notifier.name if len(message.mentions) > 0 else "someone")
+    writeToFile(filename, outputstr)
+    await message.channel.send(outputstr)
 
 async def whoison(message):
     sortedList = sorted(globalMap.items(), key=lambda x: x[1])
@@ -217,6 +245,7 @@ async def smurf(message):
     await message.channel.send(outputstr)
     writeToFile(filename, outputstr)
 
+
 @client.event
 async def on_message(message):
     global numInstr
@@ -237,6 +266,9 @@ async def on_message(message):
 
     if "!off" in message.content.lower():
         await off(message)
+
+    if "!lmk" in message.content.lower():
+        await lmk(message)
 
     #Admin commands
 
@@ -358,7 +390,7 @@ async def on_ready():
     global filename
 
     dbservice = await DBService.construct(filename)
-
+    
     channelID = 800499934365220864 # welcome
     channel = client.get_channel(channelID)
     roleID = 800501133642170388 # friend

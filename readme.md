@@ -6,8 +6,8 @@ List of instructions and general information about Orisa. The code lives [here](
 
 **Current Version:**
 
-    stable - 1.2.1
-    beta - 1.2.2 [testing on "The Order Of The Red Lotus"]
+    stable - 1.2.2 [running on "The Order of The Red Lotus"]
+    beta - 1.3 [testing on "BotTesting Server"]
 
 ## Getting Started
 
@@ -565,6 +565,9 @@ Case insensitive - x = X / a = A
 ***
 
 ## What's New?
+* **Major Update 1.3** 
+    Major update 1.3 will bring changes to the codebase. 
+    Users may not see as much of an impact, but it will help the devs plan out and add more features quickly and easily
 
 * **Minor Update 1.2.2**
 
