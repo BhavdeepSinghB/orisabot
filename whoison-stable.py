@@ -8,7 +8,7 @@ from modules.tables import DBService
 
 # Current Version : Orisa 1.2.2
 # Bot Configuration
-TOKEN = 'Njg1NjQyNzQwNzg4MTAxMTQx.XmLokA.T03r_Qj2bDUtkDkS54zXKmSR2JE' #Your token here 
+TOKEN = '' #Your token here 
 client = discord.Client()
 filename = "/tmp/" + datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".log"
 globalMap = {} # dict {user : datetime}
