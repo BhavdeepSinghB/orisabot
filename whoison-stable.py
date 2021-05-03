@@ -8,9 +8,9 @@ from modules.tables import DBService
 
 # Current Version : Orisa 1.2.2
 # Bot Configuration
-TOKEN = '#' #Your token here 
+TOKEN = 'Njg1NjQyNzQwNzg4MTAxMTQx.XmLokA.T03r_Qj2bDUtkDkS54zXKmSR2JE' #Your token here 
 client = discord.Client()
-filename = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".log"
+filename = "/tmp/" + datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".log"
 globalMap = {} # dict {user : datetime}
 START = datetime.datetime.now() # bot start time
 numInstr = 0 # number of instructions parsed
