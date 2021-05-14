@@ -1,11 +1,12 @@
 import discord, datetime, asyncio, time
 from discord import NotFound, Intents
+from discord import raw_models
 from modules.tables import DBService
 from modules.core import CoreService
 from modules.practice import practice
 from modules.utils import writeToFile
 from discord.utils import get
-from config import ALFRED_TOKEN, channels
+from config import ALFRED_TOKEN, channels, roles
 
 TOKEN = ALFRED_TOKEN
 
@@ -20,6 +21,7 @@ class Orisa:
     __dbservice = None
     __coreservice = None
     __channels = None
+    __roles = None
 
     def __init__(self, token):
         self.__TOKEN = token
@@ -36,6 +38,7 @@ class Orisa:
         self.__dbservice = DBService()
         self.__coreservice = CoreService()
         self.__channels = channels
+        self.__roles = roles
 
     def start(self):
         self.__client.run(self.__TOKEN)
@@ -62,28 +65,27 @@ class Orisa:
             def check(reaction, user):
                     return str(reaction.emoji) == '✅' and user == member        
             try:
-                # 90 Day timeout
+                # 30 Day timeout
                 user = (await self.__client.wait_for('reaction_add',  timeout=2592000, check=check))[1]
-                await message.remove_reaction('✅', member)
+                await message.remove_reaction('✅', user)
+                await message.delete()
             except asyncio.TimeoutError:
                 await self.log(f"Welcome message {message.id} to {member.name} is not being tracked anymore, please ask them to rejoin or manually add Friend role")
-                await message.remove_reaction('✅', self.__client.user)
+                await message.delete()
                 return
             except NotFound:
                 writeToFile(self.__filename, "Error, message not found")
                 pass
             
-            roleID = 800519731546292264 # friend
-            role = get(self.__client.guilds[0].roles, id=roleID)    
-            validuser = True
-            for x in ["admin", "team member", "friend"]:
-                if x in ([y.name.lower() for y in user.roles]):
-                    validuser = False
-            if validuser:
-                await user.add_roles(role) 
-                outputstr = "Gave the {} role to {}".format(role.name, user.name)
-                await self.log(outputstr)
-                writeToFile(self.__filename, outputstr)
+            role = get(self.__client.guilds[0].roles, id=self.__roles['friend'])    
+        
+            await user.add_roles(role) 
+            
+            outputstr = "Gave the {} role to {}".format(role.name, user.name)
+            await self.log(outputstr)
+            writeToFile(self.__filename, outputstr)
+            
+            
     
     # @Orisa.__client.event
     async def on_message(self, message):
