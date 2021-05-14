@@ -21,6 +21,7 @@ class CoreService:
         self.__groupList = []
         self.__smurfList = []
         self.__notifyDict = {"All": []}
+        return self
     
     async def get_online_users(self):
         return self.__globalMap

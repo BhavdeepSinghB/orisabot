@@ -5,8 +5,9 @@ from modules.core import CoreService
 from modules.practice import practice
 from modules.utils import writeToFile
 from discord.utils import get
+from config import ALFRED_TOKEN
 
-TOKEN = "#"
+TOKEN = ALFRED_TOKEN
 
 class Orisa: 
     #Variables
@@ -22,6 +23,8 @@ class Orisa:
     def __init__(self, token):
         self.__TOKEN = token
         self.__client = discord.Client()
+        self.on_ready = self.__client.event(self.on_ready)
+        self.on_message = self.__client.event(self.on_message)
         self.__START = datetime.datetime.now()
         self.__filename = self.__START.strftime("%Y_%m_%d_%H_%M_%S") + ".log"
         self.__numBugs = 0
@@ -44,12 +47,13 @@ class Orisa:
         loop.run_until_complete(self.remove_reaction_async(message, user))
         loop.close()
 
-    @Orisa.__client.event
+    # @Orisa.__client.event
     async def on_ready(self):
         print("Live")
 
-        self.__dbservice = await DBService.construct(self.__filename)
         self.__coreservice = await CoreService.construct(self.__filename)
+        self.__dbservice = await DBService.construct(self.__filename)
+        
         
         '''
         channelID = 800499934365220864 # welcome
@@ -76,7 +80,7 @@ class Orisa:
                 writeToFile(self.__filename, outputstr)
         '''
 
-    @Orisa.__client.event
+    # @Orisa.__client.event
     async def on_message(self, message):
 
         if message.author == self.__client.user:
@@ -129,8 +133,6 @@ class Orisa:
         if "!lmk" in message.content.lower():
             await self.__coreservice.lmk(message)
 
-        
-
         if "!group" in message.content.lower():
             await self.__coreservice.group(message)
 
@@ -178,6 +180,9 @@ class Orisa:
         
         if message.content.lower() == "x":
             await message.channel.send("{} has assembled the X-Men!".format(message.author.name))
+
+        self.__numInstr += 1
+
 
 
 o = Orisa(TOKEN)
