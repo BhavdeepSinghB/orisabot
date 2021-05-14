@@ -4,12 +4,12 @@ from modules.utils import writeToFile
 from discord.utils import get
 from discord import NotFound
 from modules.tables import DBService
-from config import ORISA_TOKEN
+from config import ORISA_TOKEN, ALFRED_TOKEN
 
 
 # Current Version : Orisa 1.2.2
 # Bot Configuration
-TOKEN = ORISA_TOKEN #Your token here 
+TOKEN = ALFRED_TOKEN #Your token here 
 client = discord.Client()
 filename = "/tmp/" + datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".log"
 globalMap = {} # dict {user : datetime}
@@ -246,6 +246,9 @@ async def smurf(message):
     await message.channel.send(outputstr)
     writeToFile(filename, outputstr)
 
+@client.event
+async def on_member_join(member):
+    print("HELO!")
 
 @client.event
 async def on_message(message):

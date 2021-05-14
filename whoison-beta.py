@@ -1,11 +1,11 @@
-import discord, datetime, random, asyncio, copy, threading, time
-from discord import NotFound
+import discord, datetime, asyncio, time
+from discord import NotFound, Intents
 from modules.tables import DBService
 from modules.core import CoreService
 from modules.practice import practice
 from modules.utils import writeToFile
 from discord.utils import get
-from config import ALFRED_TOKEN
+from config import ALFRED_TOKEN, channels
 
 TOKEN = ALFRED_TOKEN
 
@@ -19,67 +19,72 @@ class Orisa:
     __numBugs = None
     __dbservice = None
     __coreservice = None
+    __channels = None
 
     def __init__(self, token):
         self.__TOKEN = token
-        self.__client = discord.Client()
+        intents = Intents.default()
+        intents.members = True
+        self.__client = discord.Client(intents=intents)
         self.on_ready = self.__client.event(self.on_ready)
         self.on_message = self.__client.event(self.on_message)
+        self.on_member_join = self.__client.event(self.on_member_join)
         self.__START = datetime.datetime.now()
         self.__filename = self.__START.strftime("%Y_%m_%d_%H_%M_%S") + ".log"
         self.__numBugs = 0
         self.__numInstr = 0
         self.__dbservice = DBService()
         self.__coreservice = CoreService()
+        self.__channels = channels
 
     def start(self):
         self.__client.run(self.__TOKEN)
+
+    async def log(self, outputstr):
+        logchannel = self.__client.get_channel(self.__channels['log'])
+        if logchannel is not None:
+            await logchannel.send(outputstr)
     
-    async def remove_reaction_async(self, message, user):
-        while(len(message.reactions) > 1):
-            time.sleep(5)
-            await message.remove_reaction('✅', user)
-
-    def remove_reaction_sync(self, message, user):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-        loop.run_until_complete(self.remove_reaction_async(message, user))
-        loop.close()
-
-    # @Orisa.__client.event
     async def on_ready(self):
         print("Live")
 
         self.__coreservice = await CoreService.construct(self.__filename)
         self.__dbservice = await DBService.construct(self.__filename)
         
+    async def on_member_join(self, member):
+        welcomechannel = self.__client.get_channel(self.__channels['welcome'])
         
-        '''
-        channelID = 800499934365220864 # welcome
-        channel = self.__client.get_channel(channelID)
-        roleID = 800501133642170388 # friend
-        role = get(self.__client.guilds[0].roles, id=roleID)
-        message = await channel.send("React to this message with ✅ to accept the rules and access the server")
-        
-        def check(reaction, user):
-                return str(reaction.emoji) == '✅' and user != message.author
-        
-        while True:
+        if welcomechannel is not None:
+            message = await welcomechannel.send(f'Welcome, {member.mention}. React to this message with a ✅ to accept the rules')
+            
             await message.add_reaction('✅')
-            user = (await self.__client.wait_for('reaction_add', check=check))[1]    
+
+            def check(reaction, user):
+                    return str(reaction.emoji) == '✅' and user == member        
             try:
-                await message.remove_reaction('✅', user)
+                # 90 Day timeout
+                user = (await self.__client.wait_for('reaction_add',  timeout=2592000, check=check))[1]
+                await message.remove_reaction('✅', member)
+            except asyncio.TimeoutError:
+                await self.log(f"Welcome message {message.id} to {member.name} is not being tracked anymore, please ask them to rejoin or manually add Friend role")
+                await message.remove_reaction('✅', self.__client.user)
+                return
             except NotFound:
                 writeToFile(self.__filename, "Error, message not found")
-                _thread = threading.Thread(target=self.remove_reaction_sync, args=(message, user))
-                _thread.start
-            finally:
-                await user.add_roles(role)
+                pass
+            
+            roleID = 800519731546292264 # friend
+            role = get(self.__client.guilds[0].roles, id=roleID)    
+            validuser = True
+            for x in ["admin", "team member", "friend"]:
+                if x in ([y.name.lower() for y in user.roles]):
+                    validuser = False
+            if validuser:
+                await user.add_roles(role) 
                 outputstr = "Gave the {} role to {}".format(role.name, user.name)
+                await self.log(outputstr)
                 writeToFile(self.__filename, outputstr)
-        '''
-
+    
     # @Orisa.__client.event
     async def on_message(self, message):
 
@@ -113,7 +118,7 @@ class Orisa:
             await self.__coreservice.alloff(message)
 
         if "!practice" in message.content.lower() and "admin" in [y.name.lower() for y in message.author.roles]:
-            globalMap = self.__coreservice.get_online_users()
+            globalMap = await self.__coreservice.get_online_users()
             await practice(message, globalMap, self.__client)
 
         # General User Commands

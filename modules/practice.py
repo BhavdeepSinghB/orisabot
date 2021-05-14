@@ -18,9 +18,19 @@ async def practice(message, globalMap, client):
     if "-cm" in message.content.lower():
         customMaps = True
     # Take all online members at the time of invoking
-    allOn = [*globalMap]
+    #print(globalMap)
+    # return
+    allOn = list(globalMap.keys())
 
-    numGames = int(message.content.lower().split(' ')[1])
+    try:
+        numGames = int(message.content.lower().split(' ')[1])
+    except IndexError:
+        await message.channel.send("Syntax: !practice [-flags] <number of games>")
+        return
+    
+    if len(allOn) < 2:
+        await message.channel.send("Can't create a practice session with less than 2 online players")
+        return
 
     outputstr = "Creating a"
 
