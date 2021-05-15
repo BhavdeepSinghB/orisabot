@@ -53,32 +53,7 @@ class Orisa:
 
         self.__coreservice = await CoreService.construct(self.__filename)
         self.__dbservice = await DBService.construct(self.__filename)
-        
-        
-        '''
-        channelID = 800499934365220864 # welcome
-        channel = self.__client.get_channel(channelID)
-        roleID = 800501133642170388 # friend
-        role = get(self.__client.guilds[0].roles, id=roleID)
-        message = await channel.send("React to this message with ✅ to accept the rules and access the server")
-        
-        def check(reaction, user):
-                return str(reaction.emoji) == '✅' and user != message.author
-        
-        while True:
-            await message.add_reaction('✅')
-            user = (await self.__client.wait_for('reaction_add', check=check))[1]    
-            try:
-                await message.remove_reaction('✅', user)
-            except NotFound:
-                writeToFile(self.__filename, "Error, message not found")
-                _thread = threading.Thread(target=self.remove_reaction_sync, args=(message, user))
-                _thread.start
-            finally:
-                await user.add_roles(role)
-                outputstr = "Gave the {} role to {}".format(role.name, user.name)
-                writeToFile(self.__filename, outputstr)
-        '''
+    
 
     # @Orisa.__client.event
     async def on_message(self, message):
