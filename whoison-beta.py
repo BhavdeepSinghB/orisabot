@@ -27,7 +27,8 @@ class Orisa:
         self.__TOKEN = token
         intents = Intents.default()
         intents.members = True
-        self.__client = discord.Client(intents=intents)
+        activity = discord.Activity(type=discord.ActivityType.watching, name="over Numbani")
+        self.__client = discord.Client(intents=intents, activity=activity)
         self.on_ready = self.__client.event(self.on_ready)
         self.on_message = self.__client.event(self.on_message)
         self.on_member_join = self.__client.event(self.on_member_join)
