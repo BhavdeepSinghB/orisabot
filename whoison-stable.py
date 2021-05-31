@@ -54,6 +54,7 @@ class Orisa:
         if message_channel != None:
             await self.log(f'[Tasks] Sending automated message for task taco_message')
             await message_channel.send(bot_tasks['taco_message']['message'])
+
         else:
             self.log("[Tasks] Error: Could not locate task channel for task {}".format(bot_tasks['taco_message']))
 
