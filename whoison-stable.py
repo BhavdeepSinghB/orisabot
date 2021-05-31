@@ -7,11 +7,11 @@ from modules.practice import practice
 from modules.utils import writeToFile
 from discord.utils import get
 from discord.ext import tasks
-from config_alfred import ALFRED_TOKEN, channels, roles, bot_tasks
-# from config_orisa import ORISA_TOKEN, ALFRED_TOKEN, channels, roles, bot_tasks
+# from config_alfred import ALFRED_TOKEN, channels, roles, bot_tasks
+from config_orisa import ORISA_TOKEN, channels, roles, bot_tasks
 
 
-TOKEN = ALFRED_TOKEN
+TOKEN = ORISA_TOKEN
 
 class Orisa: 
     #Variables
@@ -80,7 +80,7 @@ class Orisa:
     
     async def on_ready(self):
         print("Live")
-        self.log("Logged in as {}".format(self.__client.user))
+        await self.log("Logged in as {}".format(self.__client.user))
         self.__coreservice = await CoreService.construct(self.__filename)
         self.__dbservice = await DBService.construct(self.__filename)
         
