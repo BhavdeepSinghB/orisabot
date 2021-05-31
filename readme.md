@@ -6,8 +6,7 @@ List of instructions and general information about Orisa. The code lives [here](
 
 **Current Version:**
 
-    stable - 1.2.2 [running on "The Order of The Red Lotus"]
-    beta - 1.3 [testing on "BotTesting Server"]
+    stable - 1.3 [running on "The Order of The Red Lotus"]
 
 ## Getting Started
 
@@ -565,6 +564,18 @@ Case insensitive - x = X / a = A
 ***
 
 ## What's New?
+* **1.3 is here!**
+    Major update 1.3 brings about a change to the codebase. While the difference isn't noticable off-hand, it will help quite a bit with debugging, maintainance and adding new features! 
+    
+    New Features:
+    * Welcome message - changed to send a new message in the event a user joins and delete it after each acceptance. This allows for a clean boot for the bot
+    * Tasks - Ability to send scheduled messages. Currently sending a special message to taco
+    
+    Changes:
+    * Admin commands have now been switched to "team member" commands, anyone with the role can now access them
+
+    Expecting to bring slash commands in the next incremental update!
+
 * **Major Update 1.3** 
     Major update 1.3 will bring changes to the codebase. 
     Users may not see as much of an impact, but it will help the devs plan out and add more features quickly and easily

@@ -1,12 +1,14 @@
 import discord, datetime, asyncio, time
 from discord import NotFound, Intents
 from discord import raw_models
+from discord import message
 from modules.tables import DBService
 from modules.core import CoreService
 from modules.practice import practice
 from modules.utils import writeToFile
 from discord.utils import get
-from config import ALFRED_TOKEN, channels, roles
+from discord.ext import tasks
+from config_alfred import ALFRED_TOKEN, channels, roles, bot_tasks
 
 TOKEN = ALFRED_TOKEN
 
@@ -42,8 +44,34 @@ class Orisa:
         self.__roles = roles
 
     def start(self):
+        self.taco_message_nine_am.start()
         self.__client.run(self.__TOKEN)
 
+    @tasks.loop(hours=24)
+    async def taco_message_nine_am(self):
+        message_channel = self.__client.get_channel(bot_tasks['taco_message']['channel'])
+        if message_channel != None:
+            await self.log(f'Got channel {message_channel}, sending automated message')
+            await message_channel.send(bot_tasks['taco_message']['message'])
+        else:
+            self.log("Error: Could not locate task channel for task {}".format(bot_tasks['taco_message']))
+
+    @taco_message_nine_am.before_loop
+    async def before(self):
+        await self.__client.wait_until_ready()
+        now = datetime.datetime.now()
+        if now.time() > bot_tasks['taco_message']['time']:
+            tomorrow = datetime.datetime.combine(now.date() + datetime.timedelta(days=1), time(0))
+            seconds = (tomorrow - now).total_seconds()
+            print(f'Sleeping for {seconds} seconds')
+            await asyncio.sleep(seconds)
+        target_time = datetime.datetime.combine(now.date(), bot_tasks['taco_message']['time'])
+        seconds_until_target = (target_time - now).total_seconds()
+        print(f'Sleeping for {seconds_until_target} seconds')
+        await asyncio.sleep(seconds_until_target)
+        
+        
+    
     async def log(self, outputstr):
         logchannel = self.__client.get_channel(self.__channels['log'])
         if logchannel is not None:

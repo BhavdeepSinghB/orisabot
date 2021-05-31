@@ -21,6 +21,10 @@ class CoreService:
         self.__groupList = []
         self.__smurfList = []
         self.__notifyDict = {"All": []}
+        
+        outputstr = "Successfully constructed Core Service"
+        print(outputstr)
+        writeToFile(self.__filename, outputstr)
         return self
     
     async def get_online_users(self):

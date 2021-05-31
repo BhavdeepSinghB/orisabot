@@ -1,5 +1,6 @@
 modules/_pycache_/*
+_pycache_/*
 modules/client_secret.json
 overwatch_team.db*
 *.log
-config.py
+config_*.py
