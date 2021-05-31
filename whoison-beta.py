@@ -1,11 +1,14 @@
-import discord, datetime, random, asyncio, copy, threading, time
-from discord import NotFound
+import discord, datetime, asyncio, time
+from discord import NotFound, Intents
+from discord import raw_models
+from discord import message
 from modules.tables import DBService
 from modules.core import CoreService
 from modules.practice import practice
 from modules.utils import writeToFile
 from discord.utils import get
-from config import ALFRED_TOKEN
+from discord.ext import tasks
+from config_alfred import ALFRED_TOKEN, channels, roles, bot_tasks
 
 TOKEN = ALFRED_TOKEN
 
@@ -19,42 +22,99 @@ class Orisa:
     __numBugs = None
     __dbservice = None
     __coreservice = None
+    __channels = None
+    __roles = None
 
     def __init__(self, token):
         self.__TOKEN = token
-        self.__client = discord.Client()
+        intents = Intents.default()
+        intents.members = True
+        activity = discord.Activity(type=discord.ActivityType.watching, name="over Numbani")
+        self.__client = discord.Client(intents=intents, activity=activity)
         self.on_ready = self.__client.event(self.on_ready)
         self.on_message = self.__client.event(self.on_message)
+        self.on_member_join = self.__client.event(self.on_member_join)
         self.__START = datetime.datetime.now()
         self.__filename = self.__START.strftime("%Y_%m_%d_%H_%M_%S") + ".log"
         self.__numBugs = 0
         self.__numInstr = 0
         self.__dbservice = DBService()
         self.__coreservice = CoreService()
+        self.__channels = channels
+        self.__roles = roles
 
     def start(self):
+        self.taco_message_nine_am.start()
         self.__client.run(self.__TOKEN)
+
+    @tasks.loop(hours=24)
+    async def taco_message_nine_am(self):
+        message_channel = self.__client.get_channel(bot_tasks['taco_message']['channel'])
+        if message_channel != None:
+            await self.log(f'Got channel {message_channel}, sending automated message')
+            await message_channel.send(bot_tasks['taco_message']['message'])
+        else:
+            self.log("Error: Could not locate task channel for task {}".format(bot_tasks['taco_message']))
+
+    @taco_message_nine_am.before_loop
+    async def before(self):
+        await self.__client.wait_until_ready()
+        now = datetime.datetime.now()
+        if now.time() > bot_tasks['taco_message']['time']:
+            tomorrow = datetime.datetime.combine(now.date() + datetime.timedelta(days=1), time(0))
+            seconds = (tomorrow - now).total_seconds()
+            print(f'Sleeping for {seconds} seconds')
+            await asyncio.sleep(seconds)
+        target_time = datetime.datetime.combine(now.date(), bot_tasks['taco_message']['time'])
+        seconds_until_target = (target_time - now).total_seconds()
+        print(f'Sleeping for {seconds_until_target} seconds')
+        await asyncio.sleep(seconds_until_target)
+        
+        
     
-    async def remove_reaction_async(self, message, user):
-        while(len(message.reactions) > 1):
-            time.sleep(5)
-            await message.remove_reaction('✅', user)
-
-    def remove_reaction_sync(self, message, user):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-        loop.run_until_complete(self.remove_reaction_async(message, user))
-        loop.close()
-
-    # @Orisa.__client.event
+    async def log(self, outputstr):
+        logchannel = self.__client.get_channel(self.__channels['log'])
+        if logchannel is not None:
+            await logchannel.send(outputstr)
+    
     async def on_ready(self):
         print("Live")
 
         self.__coreservice = await CoreService.construct(self.__filename)
         self.__dbservice = await DBService.construct(self.__filename)
-    
+        
+    async def on_member_join(self, member):
+        welcomechannel = self.__client.get_channel(self.__channels['welcome'])
+        
+        if welcomechannel is not None:
+            message = await welcomechannel.send(f'Welcome, {member.mention}. React to this message with a ✅ to accept the rules')
+            
+            await message.add_reaction('✅')
 
+            def check(reaction, user):
+                    return str(reaction.emoji) == '✅' and user == member        
+            try:
+                # 30 Day timeout
+                user = (await self.__client.wait_for('reaction_add',  timeout=2592000, check=check))[1]
+                await message.remove_reaction('✅', user)
+                await message.delete()
+            except asyncio.TimeoutError:
+                await self.log(f"Welcome message {message.id} to {member.name} is not being tracked anymore, please ask them to rejoin or manually add Friend role")
+                await message.delete()
+                return
+            except NotFound:
+                writeToFile(self.__filename, "Error, message not found")
+                pass
+            
+            role = get(self.__client.guilds[0].roles, id=self.__roles['friend'])    
+        
+            await user.add_roles(role) 
+            
+            outputstr = "Gave the {} role to {}".format(role.name, user.name)
+            await self.log(outputstr)
+            writeToFile(self.__filename, outputstr)
+            
+           
     # @Orisa.__client.event
     async def on_message(self, message):
 
@@ -88,7 +148,7 @@ class Orisa:
             await self.__coreservice.alloff(message)
 
         if "!practice" in message.content.lower() and "admin" in [y.name.lower() for y in message.author.roles]:
-            globalMap = self.__coreservice.get_online_users()
+            globalMap = await self.__coreservice.get_online_users()
             await practice(message, globalMap, self.__client)
 
         # General User Commands
