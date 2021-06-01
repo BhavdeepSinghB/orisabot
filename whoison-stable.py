@@ -56,7 +56,7 @@ class Orisa:
             await message_channel.send(bot_tasks['taco_message']['message'])
 
         else:
-            self.log("[Tasks] Error: Could not locate task channel for task {}".format(bot_tasks['taco_message']))
+            await self.log("[Tasks] Error: Could not locate task channel for task {}".format(bot_tasks['taco_message']))
 
     @taco_message_nine_am.before_loop
     async def before(self):
@@ -76,6 +76,9 @@ class Orisa:
         logchannel = self.__client.get_channel(self.__channels['log'])
         if logchannel is not None:
             await logchannel.send(outputstr)
+        else:
+            writeToFile(self.__filename, "Error: Could not find log channel")
+            print("Could not find log channel")
         writeToFile(self.__filename, outputstr)
     
     async def on_ready(self):
