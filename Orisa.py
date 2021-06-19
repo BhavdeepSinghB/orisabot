@@ -1,16 +1,14 @@
-import discord, datetime, asyncio, time
+from os import write
+import discord, datetime, asyncio, time, re
+from dateutil import parser
+from pytz import timezone
 from discord import NotFound, Intents
-from discord import raw_models
-from discord import message
 from modules.tables import DBService
 from modules.core import CoreService
 from modules.practice import practice
 from modules.utils import writeToFile
 from discord.utils import get
 from discord.ext import tasks
-from config_alfred import ALFRED_TOKEN, channels, roles, bot_tasks
-
-TOKEN = ALFRED_TOKEN
 
 class Orisa: 
     #Variables
@@ -25,7 +23,7 @@ class Orisa:
     __channels = None
     __roles = None
 
-    def __init__(self, token):
+    def __init__(self, token, channels, roles, tasks):
         self.__TOKEN = token
         intents = Intents.default()
         intents.members = True
@@ -42,6 +40,7 @@ class Orisa:
         self.__coreservice = CoreService()
         self.__channels = channels
         self.__roles = roles
+        self.__bot_tasks = tasks
 
     def start(self):
         self.taco_message_nine_am.start()
@@ -49,37 +48,54 @@ class Orisa:
 
     @tasks.loop(hours=24)
     async def taco_message_nine_am(self):
-        message_channel = self.__client.get_channel(bot_tasks['taco_message']['channel'])
+        message_channel = self.__client.get_channel(self.__bot_tasks['taco_message']['channel'])
         if message_channel != None:
-            await self.log(f'Got channel {message_channel}, sending automated message')
-            await message_channel.send(bot_tasks['taco_message']['message'])
+            await self.log(f'[Tasks] Sending automated message for task taco_message')
+            await message_channel.send(self.__bot_tasks['taco_message']['message'])
+
         else:
-            self.log("Error: Could not locate task channel for task {}".format(bot_tasks['taco_message']))
+            await self.log("[Tasks] Error: Could not locate task channel for task {}".format(self.__bot_tasks['taco_message']))
 
     @taco_message_nine_am.before_loop
     async def before(self):
         await self.__client.wait_until_ready()
         now = datetime.datetime.now()
-        if now.time() > bot_tasks['taco_message']['time']:
-            tomorrow = datetime.datetime.combine(now.date() + datetime.timedelta(days=1), time(0))
+        if now.time() > self.__bot_tasks['taco_message']['time']:
+            tomorrow = datetime.datetime.combine(now.date() + datetime.timedelta(days=1), self.__bot_tasks['taco_message']['time'])
             seconds = (tomorrow - now).total_seconds()
-            print(f'Sleeping for {seconds} seconds')
+            await self.log("[Tasks] Sleeping for {:.2f} seconds till {}".format(seconds, self.__bot_tasks["taco_message"]["time"]))
             await asyncio.sleep(seconds)
-        target_time = datetime.datetime.combine(now.date(), bot_tasks['taco_message']['time'])
+        target_time = datetime.datetime.combine(now.date(), self.__bot_tasks['taco_message']['time'])
         seconds_until_target = (target_time - now).total_seconds()
-        print(f'Sleeping for {seconds_until_target} seconds')
+        await self.log('[Tasks] Sleeping for {:.2f} seconds till {}'.format(seconds_until_target, target_time))
         await asyncio.sleep(seconds_until_target)
         
-        
-    
     async def log(self, outputstr):
         logchannel = self.__client.get_channel(self.__channels['log'])
         if logchannel is not None:
             await logchannel.send(outputstr)
+        else:
+            writeToFile(self.__filename, "Error: Could not find log channel")
+            print("Could not find log channel")
+        writeToFile(self.__filename, outputstr)
+
+    async def parse_time(self, time_matches, id):
+        parsed_time = parser.parse(time_matches[0])
+        timezones = self.__dbservice.get_all_timezones()
+        sender_timezone = self.__dbservice.get_sender_timezone(id)
+        timezones.remove(sender_timezone)            
+        
+        outputstr = "Parsed time {} {}\n".format(parsed_time.strftime("%I:%M %P"), sender_timezone)
+
+        for i in timezones:
+            converted_time = parsed_time.astimezone(timezone(i)).strftime("%I:%M %P")
+            outputstr += "{} {}\n".format(converted_time, i)
+        await self.log("Parsed time {} into {}".format(parsed_time, timezones))
+        return outputstr
     
     async def on_ready(self):
         print("Live")
-
+        await self.log("Logged in as {}".format(self.__client.user))
         self.__coreservice = await CoreService.construct(self.__filename)
         self.__dbservice = await DBService.construct(self.__filename)
         
@@ -112,15 +128,21 @@ class Orisa:
             
             outputstr = "Gave the {} role to {}".format(role.name, user.name)
             await self.log(outputstr)
-            writeToFile(self.__filename, outputstr)
-            
-           
+            writeToFile(self.__filename, outputstr) 
+    
     # @Orisa.__client.event
     async def on_message(self, message):
 
         if message.author == self.__client.user:
                 return
         
+        # Parse Time
+        regex = r'\d{1,2}\s?(?:(?:am|pm)|(?::\d{1,2})\s?(?:am|pm)?)'
+        time_matches = re.findall(regex, message.content.lower())
+        if len(time_matches) > 0:
+            outputstr = await self.parse_time(time_matches, message.author.id)
+            await message.channel.send(outputstr)
+
         # Help/Information
         if "!status" in message.content.lower():
             if message.author.name == "Orisa":
@@ -137,17 +159,17 @@ class Orisa:
         
         if "!needhealing" in message.content.lower() or "!ineedhealing" in message.content.lower(): 
             outputstr = "Hi, I'm Orisa, a bot made by Zoid to automate the boring stuff on this server. For a full list of commands and documentation follow the link below \n"
-            outputstr += "https://bhavdeep.me/OrisaBot"
+            outputstr += "https://bhavdeepsinghb.github.io/OrisaBot"
             await message.channel.send(outputstr)
 
         # Admin commands
-        if "!destroygroup" in message.content.lower() and "admin" in [y.name.lower() for y in message.author.roles]:
+        if "!destroygroup" in message.content.lower() and "team member" in [y.name.lower() for y in message.author.roles]:
             await self.__coreservice.destroygroup(message)
         
-        if "!alloff" in message.content.lower() and "admin" in  [y.name.lower() for y in message.author.roles]:
+        if "!alloff" in message.content.lower() and "team member" in  [y.name.lower() for y in message.author.roles]:
             await self.__coreservice.alloff(message)
 
-        if "!practice" in message.content.lower() and "admin" in [y.name.lower() for y in message.author.roles]:
+        if "!practice" in message.content.lower() and "team member" in [y.name.lower() for y in message.author.roles]:
             globalMap = await self.__coreservice.get_online_users()
             await practice(message, globalMap, self.__client)
 
@@ -217,8 +239,3 @@ class Orisa:
             await message.channel.send("{} has assembled the X-Men!".format(message.author.name))
 
         self.__numInstr += 1
-
-
-
-o = Orisa(TOKEN)
-o.start()

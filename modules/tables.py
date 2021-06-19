@@ -5,7 +5,7 @@ class DBService:
     # Variables
     __cursor = None
     __filename = None
-    __table_name = ""
+    __sr_table_name = ""
     
     @classmethod
     async def construct(cls, filename):
@@ -23,7 +23,8 @@ class DBService:
         outputstr = "Successfully constructed DBService"
         print(outputstr)
         writeToFile(self.__filename, outputstr)
-        self.__table_name = "srdata"
+        self.__sr_table_name = "srdata"
+        self.__tz_table_name = "tzinfo"
         return self
 
     async def register(self, message):
@@ -38,7 +39,7 @@ class DBService:
             writeToFile(self.__filename, "[{}] ".format(message.author.name) + outputstr)
             return
         
-        query = "INSERT INTO {} (name) VALUES ('{}')".format(self.__table_name, person.name)
+        query = "INSERT INTO {} (name) VALUES ('{}')".format(self.__sr_table_name, person.name)
         if not c.execute(query):
             outputstr = "There's been an error and it has been reported. Please try again, later"
             await message.channel.send(outputstr)
@@ -74,7 +75,7 @@ class DBService:
             return
 
         if "-team" in message.content.lower():
-            c.execute("SELECT * FROM {}".format(self.__table_name))
+            c.execute("SELECT * FROM {}".format(self.__sr_table_name))
             highestList = []
             everyone = c.fetchall()
             for i in everyone:
@@ -102,7 +103,7 @@ class DBService:
             person = message.mentions[0].name
             writeToFile(self.__filename, "[{}] invoked !sr for {}".format(message.author.name, person))
         
-        query = "SELECT * FROM {} WHERE name  = '{}'".format(self.__table_name, person)
+        query = "SELECT * FROM {} WHERE name  = '{}'".format(self.__sr_table_name, person)
         if not c.execute(query):
             outputstr = "There's been an error and it has been reported. Please try again, later"
             await message.channel.send(outputstr)
@@ -198,7 +199,7 @@ class DBService:
 
         person = user.name
         
-        query = "SELECT * FROM {} WHERE name = '{}'".format(self.__table_name, person)
+        query = "SELECT * FROM {} WHERE name = '{}'".format(self.__sr_table_name, person)
         if not c.execute(query):
             outputstr = "There's been an error and it has been reported. Please try again, later"
             await message.channel.send(outputstr)
@@ -208,7 +209,7 @@ class DBService:
         user = c.fetchall()
 
         if len(user) == 0:
-            outputstr = "Whoops I can't find any details for {}. If you're not registered, type `!register` to start!".format(person)
+            outputstr = "Can't find any details for {}. If you're not registered, type `!register` to start!".format(person)
             writeToFile(self.__filename, outputstr)
             await message.channel.send(outputstr)
             return
@@ -221,7 +222,7 @@ class DBService:
         elif role == "heals":
             role = "support"
 
-        query = "UPDATE {} SET {} = {} WHERE name = '{}'".format(self.__table_name, role, newSR, person)
+        query = "UPDATE {} SET {} = {} WHERE name = '{}'".format(self.__sr_table_name, role, newSR, person)
         if not c.execute(query):
             outputstr = "There's been an error and it has been reported. Please try again, later"
             await message.channel.send(outputstr)
@@ -232,4 +233,32 @@ class DBService:
         await message.channel.send(outputstr)
         writeToFile(self.__filename, outputstr)
         await self.sr(message)
+    
+    def get_all_timezones(self):
+        c = self.__cursor
+        query = "SELECT timezone FROM {}".format(self.__tz_table_name)
+        if not c.execute(query):
+            return
+        timezones = set(c.fetchall())
+        
+        if len(timezones) == 0:
+            print("Can't find any timezones")
+            return
+        
+        return [i[0] for i in timezones]
+
+    
+    def get_sender_timezone(self, author_id):
+        c = self.__cursor
+        query = "SELECT timezone FROM {} WHERE id = '{}'".format(self.__tz_table_name, author_id)
+        if not c.execute(query):
+            print("Error executing query")
+            return
+        timezone = c.fetchall()
+        if len(timezone) == 0:
+            outputstr = "Can't find any details for {}".format(author_id)
+            writeToFile(self.__filename, outputstr)
+            return
+        return timezone[0][0]
+
         

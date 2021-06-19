@@ -47,10 +47,7 @@ class CoreService:
         addedPerson = message.author
         mentions = message.mentions
         if len(mentions) > 0 :
-            if "admin" in [y.name.lower() for y in message.author.roles]:
-                outputstr = "Admin command invoked by {}".format(message.author.name)
-                await message.channel.send(outputstr)
-                writeToFile(self.__filename, outputstr)
+            if "team member" in [y.name.lower() for y in message.author.roles]:
                 for i in mentions:
                     self.__globalMap[i] = datetime.datetime.now()
                     outputstr = "{} is now online!".format(i.name)
@@ -115,7 +112,7 @@ class CoreService:
 
         mentions = message.mentions
         if len(mentions) > 0:
-            if "admin" in [y.name.lower() for y in message.author.roles]:
+            if "team member" in [y.name.lower() for y in message.author.roles]:
                 for i in mentions:
                         outputstr = await turnOff(i)
                         await message.channel.send(outputstr)

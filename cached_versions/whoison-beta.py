@@ -1,5 +1,7 @@
 from os import write
-import discord, datetime, asyncio, time
+import discord, datetime, asyncio, time, re
+from dateutil import parser
+from pytz import timezone
 from discord import NotFound, Intents
 from modules.tables import DBService
 from modules.core import CoreService
@@ -7,11 +9,11 @@ from modules.practice import practice
 from modules.utils import writeToFile
 from discord.utils import get
 from discord.ext import tasks
-# from config_alfred import ALFRED_TOKEN, channels, roles, bot_tasks
-from config_orisa import ORISA_TOKEN, channels, roles, bot_tasks
+from config_alfred import ALFRED_TOKEN, channels, roles, bot_tasks
 
 
-TOKEN = ORISA_TOKEN
+
+TOKEN = ALFRED_TOKEN
 
 class Orisa: 
     #Variables
@@ -63,7 +65,7 @@ class Orisa:
         await self.__client.wait_until_ready()
         now = datetime.datetime.now()
         if now.time() > bot_tasks['taco_message']['time']:
-            tomorrow = datetime.datetime.combine(now.date() + datetime.timedelta(days=1), datetime.time(0))
+            tomorrow = datetime.datetime.combine(now.date() + datetime.timedelta(days=1), bot_tasks['taco_message']['time'])
             seconds = (tomorrow - now).total_seconds()
             await self.log("[Tasks] Sleeping for {:.2f} seconds till {}".format(seconds, bot_tasks["taco_message"]["time"]))
             await asyncio.sleep(seconds)
@@ -80,6 +82,21 @@ class Orisa:
             writeToFile(self.__filename, "Error: Could not find log channel")
             print("Could not find log channel")
         writeToFile(self.__filename, outputstr)
+
+    async def parse_time(self, time_matches, id):
+        parsed_time = parser.parse(time_matches[0])
+        timezones = self.__dbservice.get_all_timezones()
+        sender_timezone = self.__dbservice.get_sender_timezone(id)
+        print(timezones)
+        print(sender_timezone)
+        timezones.remove(sender_timezone)            
+        
+        outputstr = "Parsed time {} {}\n".format(parsed_time.strftime("%I:%M %P"), sender_timezone)
+
+        for i in timezones:
+            converted_time = parsed_time.astimezone(timezone(i)).strftime("%I:%M %P")
+            outputstr += "{} {}\n".format(converted_time, i)
+        return outputstr
     
     async def on_ready(self):
         print("Live")
@@ -124,6 +141,13 @@ class Orisa:
         if message.author == self.__client.user:
                 return
         
+        # Parse Time
+        regex = r'\d{1,2}\s?(?:(?:am|pm)|(?::\d{1,2})\s?(?:am|pm)?)'
+        time_matches = re.findall(regex, message.content.lower())
+        if len(time_matches) > 0:
+            outputstr = await self.parse_time(time_matches, message.author.id)
+            await message.channel.send(outputstr)
+
         # Help/Information
         if "!status" in message.content.lower():
             if message.author.name == "Orisa":
