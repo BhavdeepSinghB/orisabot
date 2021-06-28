@@ -7,6 +7,7 @@ from modules.tables import DBService
 from modules.core import CoreService
 from modules.practice import practice
 from modules.utils import writeToFile
+from modules.reaper import Reaper
 from discord.utils import get
 from discord.ext import tasks
 
@@ -23,7 +24,7 @@ class Orisa:
     __channels = None
     __roles = None
 
-    def __init__(self, token, channels, roles, tasks):
+    def __init__(self, token, channels, roles, bot_tasks):
         self.__TOKEN = token
         intents = Intents.default()
         intents.members = True
@@ -40,36 +41,69 @@ class Orisa:
         self.__coreservice = CoreService()
         self.__channels = channels
         self.__roles = roles
-        self.__bot_tasks = tasks
+        self.__bot_tasks = bot_tasks
+        self.__reaper = Reaper(config=self.__bot_tasks.get("reaper", None), filename=self.__filename)
+
+        # Reaper variables
+        self._reaper_paged_list = []
+        self._reaper_ack_list = []
 
     def start(self):
         self.taco_message_nine_am.start()
+        self.reaper_task.start()
         self.__client.run(self.__TOKEN)
 
+    
     @tasks.loop(hours=24)
     async def taco_message_nine_am(self):
-        message_channel = self.__client.get_channel(self.__bot_tasks['taco_message']['channel'])
+        config = self.__bot_tasks['taco_message']
+        if not config['enabled']:
+            return
+        message_channel = self.__client.get_channel(config['channel'])
+        message = config['message']
         if message_channel != None:
-            await self.log(f'[Tasks] Sending automated message for task taco_message')
-            await message_channel.send(self.__bot_tasks['taco_message']['message'])
-
+            await self.log(f'[Otto] Sending automated message for task taco_message')
+            await message_channel.send(message)
         else:
-            await self.log("[Tasks] Error: Could not locate task channel for task {}".format(self.__bot_tasks['taco_message']))
+            await self.log("[Otto] [ERR] Could not locate task channel for task {}".format(self.__bot_tasks['taco_message']))
 
     @taco_message_nine_am.before_loop
     async def before(self):
         await self.__client.wait_until_ready()
+        config = self.__bot_tasks['taco_message']
+        if not config:
+            await self.log("[Otto] [ERR] Cannot find config")
+        if not config['enabled']:
+            await self.log("[Otto] Disabled")
+            return
         now = datetime.datetime.now()
-        if now.time() > self.__bot_tasks['taco_message']['time']:
-            tomorrow = datetime.datetime.combine(now.date() + datetime.timedelta(days=1), self.__bot_tasks['taco_message']['time'])
+        if now.time() > config['time']:
+            tomorrow = datetime.datetime.combine(now.date() + datetime.timedelta(days=1), config['time'])
             seconds = (tomorrow - now).total_seconds()
-            await self.log("[Tasks] Sleeping for {:.2f} seconds till {}".format(seconds, self.__bot_tasks["taco_message"]["time"]))
+            await self.log("[Otto] [SLEEP] {:.2f} seconds".format(seconds))
             await asyncio.sleep(seconds)
-        target_time = datetime.datetime.combine(now.date(), self.__bot_tasks['taco_message']['time'])
-        seconds_until_target = (target_time - now).total_seconds()
-        await self.log('[Tasks] Sleeping for {:.2f} seconds till {}'.format(seconds_until_target, target_time))
+        target_time = datetime.datetime.combine(now.date(), config['time'])
+        seconds_until_target = (target_time - now.time()).total_seconds()
+        await self.log('[Otto] [SLEEP] {:.2f} seconds'.format(seconds_until_target))
         await asyncio.sleep(seconds_until_target)
-        
+
+    @tasks.loop(seconds=10)
+    async def reaper_task(self): 
+        all_online = await self.__coreservice.get_online_users()
+        for i in all_online.keys():
+            to_reap = self.__reaper.reap(i, all_online[i])
+            if to_reap == 1:
+                await self.log(await self.__coreservice.off(user=i, role=get(self.__client.guilds[0].roles, id=self.__roles.get("online", None))))
+                await self.log(f'[Reaper] Timeout ({self.__reaper.timeout} seconds) encountered for {i.name}, reaped successfully')
+            elif to_reap == 2:
+                await self.log(f'[Reaper] [ALERT] CheckOnlineTIme {i.name} has been online for {(datetime.datetime.now() - all_online[i]).total_seconds()} seconds')
+
+    @reaper_task.before_loop
+    async def reaper_task_setup(self):
+        await self.__client.wait_until_ready()
+        await asyncio.sleep(self.__reaper.setup())
+
+
     async def log(self, outputstr):
         logchannel = self.__client.get_channel(self.__channels['log'])
         if logchannel is not None:
@@ -143,10 +177,21 @@ class Orisa:
             outputstr = await self.parse_time(time_matches, message.author.id)
             await message.channel.send(outputstr)
 
+        # Reaper Command
+        if "!ack" in message.content.lower():
+            users = [message.author]
+            if len(message.mentions) > 0:
+                users = message.mentions
+            for i in users:
+                if self.__reaper.ack(i):
+                    await self.log(f"[Reaper] ACK {i.name}")
+                elif self.__coreservice.__is_online__(i):
+                    await self.log(f"[Reaper] {i.name} not paged yet")
+                else:
+                    await self.log(f"[Reaper] {i.name} resolved")
+
         # Help/Information
         if "!status" in message.content.lower():
-            if message.author.name == "Orisa":
-                return
             duration = datetime.datetime.now() - self.__START
             outputstr = "The bot is online and has been running for {}\n".format(str(duration).split('.')[0])
             if "-v" in message.content.lower():
@@ -173,10 +218,18 @@ class Orisa:
             globalMap = await self.__coreservice.get_online_users()
             await practice(message, globalMap, self.__client)
 
+
         # General User Commands
+
         # Core Service
+        # Roles
+        
+        onlineRole = self.__roles.get("online", None)
+        
+        # Methods
+
         if "!on" in message.content.lower():
-            await self.__coreservice.on(message)
+            await self.__coreservice.on(message, role=get(self.__client.guilds[0].roles, id=onlineRole))
 
         if "!smurf" in message.content.lower():
             await self.__coreservice.smurf(message)
@@ -185,7 +238,7 @@ class Orisa:
             await self.__coreservice.whoison(message)
 
         if "!off" in message.content.lower():
-            await self.__coreservice.off(message)
+            await self.__coreservice.off(message, role=get(self.__client.guilds[0].roles, id=onlineRole))
 
         if "!lmk" in message.content.lower():
             await self.__coreservice.lmk(message)
