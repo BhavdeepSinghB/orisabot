@@ -63,6 +63,11 @@ class Reaper:
         if not self.__is_enabled:
             return 0
         if  (datetime.now() - online_time).seconds > self.__timeout:
+            try:
+                self.__paged_list.remove(user)
+                self.__ack_list.remove(user)
+            except ValueError as e:
+                self.log(f"[Reaper] {e}")   #TODO change this
             self.log(f'[Reaper] Reaping issued for {user.name}')
             return 1 
         elif self.__warn and (datetime.now() - online_time).seconds > self.__warn_time: 

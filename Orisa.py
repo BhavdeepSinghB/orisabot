@@ -44,13 +44,14 @@ class Orisa:
         self.__bot_tasks = bot_tasks
         self.__reaper = Reaper(config=self.__bot_tasks.get("reaper", None), filename=self.__filename)
 
-        # Reaper variables
-        self._reaper_paged_list = []
-        self._reaper_ack_list = []
+        if not self.__reaper.is_enabled:
+            writeToFile("Reaper config not found, disabled")
+            self.__reaper = None
 
     def start(self):
         self.taco_message_nine_am.start()
-        self.reaper_task.start()
+        if self.__reaper:
+            self.reaper_task.start()
         self.__client.run(self.__TOKEN)
 
     
@@ -87,7 +88,7 @@ class Orisa:
         await self.log('[Otto] [SLEEP] {:.2f} seconds'.format(seconds_until_target))
         await asyncio.sleep(seconds_until_target)
 
-    @tasks.loop(seconds=10)
+    @tasks.loop(hours=1)
     async def reaper_task(self): 
         all_online = await self.__coreservice.get_online_users()
         for i in all_online.keys():

@@ -1,6 +1,7 @@
 modules/_pycache_/*
-_pycache_/*
+_pycache__/
 modules/client_secret.json
 overwatch_team.db*
 *.log
 config_*.py
+nohup.out
