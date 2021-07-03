@@ -1,4 +1,5 @@
 from modules.utils import writeToFile
+import copy
 import datetime
 
 class CoreService:
@@ -26,9 +27,10 @@ class CoreService:
         print(outputstr)
         writeToFile(self.__filename, outputstr)
         return self
-    
+
+
     async def get_online_users(self):
-        return self.__globalMap
+        return copy.copy(self.__globalMap)
 
     async def notify(self, message, user, outputstr):
         # Include "All" since these people must be notified regardless
@@ -43,30 +45,40 @@ class CoreService:
                     # remove user, avoiding spam
                     self.__notifyDict[obj].remove(i)
     
-    async def on(self, message):
+    async def on(self, message=None, role=None, user=None, channel=None):
+
+        async def turnOn(user, channel=None):
+            self.__globalMap[user] = datetime.datetime.now()
+            if role != None:
+                await user.add_roles(role)
+            outputstr = "{} is now online".format(user.name)
+            await self.notify(message, user, outputstr)
+            if channel: 
+                await channel.send(outputstr)
+            writeToFile(self.__filename, outputstr)
+        
+        if user:
+            await turnOn(user)
+            writeToFile(self.__filename, f"Direct on issued for {user.name}")
+            return True
+
         addedPerson = message.author
         mentions = message.mentions
-        if len(mentions) > 0 :
+        if len(mentions) > 0:
             if "team member" in [y.name.lower() for y in message.author.roles]:
                 for i in mentions:
-                    self.__globalMap[i] = datetime.datetime.now()
-                    outputstr = "{} is now online!".format(i.name)
-                    await self.notify(message, i, outputstr)
-                    await message.channel.send(outputstr)
-                    writeToFile(self.__filename, outputstr)
+                    await turnOn(i, message.channel)
             else:
-                outputstr = "Sorry, {}, you do not have admin privellages!, you cannot invoke off or on for other users".format(message.author.name)
+                outputstr = "Sorry, {}, you do not have admin privellages!, you cannot invoke off or onfor other users"\
+                    .format(message.author.name)
                 await message.channel.send(outputstr)
                 writeToFile(self.__filename, outputstr)
                 return
         else:
-            self.__globalMap[addedPerson] = datetime.datetime.now()        
-            outputstr = "{} is now online!".format(message.author.name)
-            await self.notify(message, addedPerson, outputstr)
-            await message.channel.send(outputstr)
-            writeToFile(self.__filename, outputstr)
+            await turnOn(addedPerson, message.channel)
 
-    async def lmk(self, message):
+    # TODO ; Add role for notify and change logic to mention role instead of DM
+    async def lmk(self, message, role=None):
         notifier = "All"
         if len(message.mentions) > 0:
             notifier = message.mentions[0]
@@ -94,9 +106,11 @@ class CoreService:
             await message.channel.send(outputstr.split('.')[0])
             writeToFile(self.__filename, outputstr)
     
-    async def off(self, message):
-        deletedPerson = message.author
-        
+    async def __is_online__(self, user):
+        return user in self.__globalMap.keys()
+    
+    async def off(self, message=None, role=None, user=None):
+    
         async def turnOff(user):
             try:
                 del self.__globalMap[user]
@@ -106,17 +120,25 @@ class CoreService:
                 # Remove from groups
                 if self.isGrouped(user):
                     await self.ungroup(message, user)
+                if role != None:
+                    await user.remove_roles(role)
                 return "{} is now offline".format(user.name)
             except KeyError:
                 return "{} was not online".format(user.name)
 
+        if user:
+            writeToFile(self.__filename, f"Direct turnoff issued for {user.name}")
+            return await turnOff(user)
+            
+
+        deletedPerson = message.author
         mentions = message.mentions
         if len(mentions) > 0:
             if "team member" in [y.name.lower() for y in message.author.roles]:
                 for i in mentions:
-                        outputstr = await turnOff(i)
-                        await message.channel.send(outputstr)
-                        writeToFile(self.__filename, outputstr)
+                    outputstr = await turnOff(i)
+                    await message.channel.send(outputstr)
+                    writeToFile(self.__filename, outputstr)
             else:
                 outputstr = "Sorry, {}, you do not have admin privellages!, you cannot invoke off or on for other users".format(message.author.name)
                 await message.channel.send(outputstr)
@@ -126,7 +148,7 @@ class CoreService:
             await message.channel.send(outputstr)
             writeToFile(self.__filename, outputstr)
     
-    async def smurf(self, message):
+    async def smurf(self, message, role=None):
         if len(message.mentions) > 0 and "admin" in [y.name.lower() for y in message.author.roles]:
             user = message.mentions[0]
         else:
@@ -158,8 +180,8 @@ class CoreService:
         self.validateGroup(message)
         if callerGroup not in self.__groupList:
             await message.channel.send(
-                "{}'s group has been destroyed, {} has now been ungrouped".format(
-                user.name, callerGroup[0].name))
+                "{}'s group has been destroyed, {} has now been ungrouped".\
+                    format(user.name, callerGroup[0].name))
     
     async def ungroup_helper(self, message):
         if message.author not in [*self.__globalMap]:
@@ -171,7 +193,7 @@ class CoreService:
             await message.channel.send(outputstr)
             writeToFile(self.__filename, outputstr)
         else:
-           await self.ungroup(message, message.author)
+            await self.ungroup(message, message.author)
 
     async def group(self, message):
         blockedList = []
@@ -221,8 +243,8 @@ class CoreService:
                     await message.channel.send(outputstr)
                     writeToFile(self.__filename, outputstr)
                 if len(blockedList) > 0:
-                    outputstr = "The following players were not added since they are already grouped or offline, type !ungroup to remove yourself or !on to set your status as online {}".format(
-                            blockedList).replace('[', '').replace(']', '')
+                    outputstr = "The following players were not added since they are already grouped or offline, type !ungroup to remove yourself or !on to set your status as online {}".\
+                        format(blockedList).replace('[', '').replace(']', '')
                     await message.channel.send(outputstr)
                     writeToFile(self.__filename, outputstr)
 
