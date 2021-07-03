@@ -4,9 +4,7 @@ List of instructions and general information about Orisa. The code lives [here](
 
 [**What's New?**](#whats-new)
 
-**Current Version:**
-
-    stable - 1.3 [running on "The Order of The Red Lotus"]
+Version: 1.3.5
 
 ## Getting Started
 
@@ -564,6 +562,26 @@ Case insensitive - x = X / a = A
 ***
 
 ## What's New?
+* **1.3.5 Update**
+    Minor update 1.3.5 brings around a few more services and support services to Orisa. In addition, thanks to some deployment changes, Orisa's downtime is expected
+    to reduce dramatically.
+
+    * New Features:
+        * Task - Reaper - One of the most common problems with manually turning your status to on/off was that users would forget to do one or the other. This would lead to the 
+        core being in a stale state (the !whoisoncommand reporting incorrect information), effectively defeating the purpose of the bot. So reaper was created to alert the log
+        channel of a user that has been on for a certain amount of time. This alert can be acknowledged by either the person being paged or anyone else. This service is also responsible for turning users !off when they have hit another threshold. 
+        * (Testing) Hermes - The oldest issue with storing dynamic data in memory is that it does not persist between multiple runs and during frequent, multiple times an hour
+        outages, that is not good news. Therefore, Hermes was developed as a backup and restoration service. Currently working solely with the core, Hermes writes the current core
+        configuration to a backup file and if one exists, loads the config present in it. Hermes is also responsible for a backup task, which updates the backup every period of time (currently running at 6 hours) and creating a backup when gracefully shutting down to have the most recent state at next startup. 
+        * Config files - Instead of storing tokens and other sensitive information in the code and risking pushing that up to github, Orisa now reads most of its data from an uncomitted config file. 
+        
+            There will soon be a section on a config file in the docs. This file is also used to configure all tasks, including the ones mentioned above, allowing users more flexibility on support services without necessarily diving into the code
+    
+    * Slash commands update: Slash commands might have to be pushed back significantly since it does not like the old architecture (client) and is effectively blocked by a whole architecutre change to bot.
+        
+        For now, the focus is going to be on a few more support services, starting with logging and with perhaps some more research, it might be feasible to include slash commands with the current architecture
+
+
 * **1.3 is here!**
     Major update 1.3 brings about a change to the codebase. While the difference isn't noticable off-hand, it will help quite a bit with debugging, maintainance and adding new features! 
     
