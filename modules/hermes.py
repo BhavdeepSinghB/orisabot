@@ -1,7 +1,9 @@
+from modules.logging_service import LoggingService
 import signal
 import datetime
 import json
 import os.path
+import copy
 
 """
 Project Name: Hermes
@@ -18,14 +20,19 @@ class Hermes:
     __enabled = False
     __interval = 0
     __filename = None
-    __logfilename = None
+    __backup_on_death = False
     signals = [signal.SIGINT, signal.SIGTERM]
 
-    def __init__(self, settings, logfilename):
+    def __init__(self, settings, log=None):
         self.__enabled = settings.get('enabled', False)
         self.__interval = settings.get('interval', 0)
+        self.__backup_on_death = settings.get('backup_on_death', False)
         self.__filename = f"backups/coredump.bak" #TODO add a backup task in the future
-        self.__logfilename = logfilename
+        if log:
+            self.log = copy.copy(log)
+            self.log.sender = "HERMES"
+        else:
+            self.log = LoggingService(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
         self.__config = {}
     
     @property
@@ -40,11 +47,10 @@ class Hermes:
     def interval(self):
         return self.__interval
 
-    def log(self, outputstr):
-        writeToFile(self.__logfilename, outputstr)
-
     def attach_core(self, Core):
         self.__core = Core
+        self.log.info(f"Successfully attached Core: {Core}")
+
 
     def _format_globalMap(self, globalMap):
         id_globalMap = {}

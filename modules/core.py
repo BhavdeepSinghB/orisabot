@@ -1,4 +1,4 @@
-from modules.utils import writeToFile
+from modules.logging_service import LoggingService
 import copy
 import datetime
 
@@ -10,16 +10,20 @@ class CoreService:
     __groupList = None
     __smurfList = None
     __notifyDict = None
+    log = None
 
 
     @classmethod
-    async def construct(cls, filename, config={}, guild=None):
+    async def construct(cls, filename, config={}, guild=None, log=None):
         self = CoreService()
-
-        self.__filename = filename
+        if log:
+            self.log = copy.copy(log)
+            self.log.sender = "CORE"
+        else:
+            self.log = LoggingService(filename=datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
         self.__globalMap = {}
         if config.get("globalMap", False) and guild:
-            print("Constructing core from backup")
+            self.log.info("Constructing core from backup")
             config_dict = config['globalMap']
             for i in config_dict.keys():
                 member = guild.get_member(int(i))
@@ -35,11 +39,11 @@ class CoreService:
         self.__groupList = []
         self.__smurfList = []
         if config.get("smurfList", False) and guild:
-            print("Retrieving smurfs from backup")
+            self.log.info("Retrieving smurfs from backup")
             self.__smurfList = [guild.get_member(i) for i in config["smurfList"]]
         self.__notifyDict = {"All": []}
         if config.get("notifyDict", False) and guild:
-            print("Constructing notifier service from backup")
+            self.log.info("Constructing notifier service from backup")
             config_dict = config['notifyDict']
             for i in config_dict.keys():
                 if i == "All":
@@ -50,8 +54,7 @@ class CoreService:
                     continue
                 self.__notifyDict[member] =[guild.get_member(x) for x in config_dict[i]]
         outputstr = "Successfully constructed Core Service"
-        print(outputstr)
-        writeToFile(self.__filename, outputstr)
+        self.log.info(outputstr)
         return self
 
     @property
@@ -88,11 +91,11 @@ class CoreService:
             await self.notify(message, user, outputstr)
             if channel: 
                 await channel.send(outputstr)
-            writeToFile(self.__filename, outputstr)
+            self.log.info(outputstr)
         
         if user:
             await turnOn(user)
-            writeToFile(self.__filename, f"Direct on issued for {user.name}")
+            self.log.info(f"Direct on issued for {user.name}")
             return True
 
         addedPerson = message.author
@@ -105,7 +108,7 @@ class CoreService:
                 outputstr = "Sorry, {}, you do not have admin privellages!, you cannot invoke off or onfor other users"\
                     .format(message.author.name)
                 await message.channel.send(outputstr)
-                writeToFile(self.__filename, outputstr)
+                self.log.info(outputstr)
                 return
         else:
             await turnOn(addedPerson, message.channel)
@@ -120,7 +123,7 @@ class CoreService:
         else:
             self.__notifyDict[notifier] = [message.author]
         outputstr = "{} will be notified the next time {} goes on".format(message.author.name, notifier.name if len(message.mentions) > 0 else "someone")
-        writeToFile(self.__filename, outputstr)
+        self.log.info(outputstr)
         await message.channel.send(outputstr)
 
     async def whoison(self, message):
@@ -129,7 +132,7 @@ class CoreService:
         if len(sortedList) == 0:
             outputstr = "No one is on at the moment, {}, if you're going online, say \"!on\" to let people know!".format(message.author.name)
             await message.channel.send(outputstr)
-            writeToFile(self.__filename, outputstr)
+            self.log.info(outputstr)
             return
         for i in sortedList:
             outputstr = "{}".format(i[0].name)
@@ -137,7 +140,7 @@ class CoreService:
                 outputstr += " (smurf) " 
             outputstr += " has been on for {}".format(str((end - i[1])))
             await message.channel.send(outputstr.split('.')[0])
-            writeToFile(self.__filename, outputstr)
+            self.log.info(outputstr)
     
     async def __is_online__(self, user):
         return user in self.__globalMap.keys()
@@ -160,7 +163,7 @@ class CoreService:
                 return "{} was not online".format(user.name)
 
         if user:
-            writeToFile(self.__filename, f"Direct turnoff issued for {user.name}")
+            self.log.info(f"Direct turnoff issued for {user.name}")
             return await turnOff(user)
             
 
@@ -171,15 +174,15 @@ class CoreService:
                 for i in mentions:
                     outputstr = await turnOff(i)
                     await message.channel.send(outputstr)
-                    writeToFile(self.__filename, outputstr)
+                    self.log.info(outputstr)
             else:
                 outputstr = "Sorry, {}, you do not have admin privellages!, you cannot invoke off or on for other users".format(message.author.name)
                 await message.channel.send(outputstr)
-                writeToFile(self.__filename, outputstr)
+                self.log.info(outputstr)
         else:
             outputstr = await turnOff(deletedPerson)
             await message.channel.send(outputstr)
-            writeToFile(self.__filename, outputstr)
+            self.log.info(outputstr)
     
     async def smurf(self, message, role=None):
         if len(message.mentions) > 0 and "admin" in [y.name.lower() for y in message.author.roles]:
@@ -191,7 +194,7 @@ class CoreService:
             await self.on(message)
         outputstr = "{} is now smurfing".format(user.name)
         await message.channel.send(outputstr)
-        writeToFile(self.__filename, outputstr)
+        self.log.info(outputstr)
 
     def isGrouped(self, user):
         if user in [*self.__allgrouped]:
@@ -220,11 +223,11 @@ class CoreService:
         if message.author not in [*self.__globalMap]:
             outputstr = "{} is not online, therefore not part of any groups".format(message.author.name)
             await message.channel.send(outputstr)
-            writeToFile(self.__filename, outputstr)
+            self.log.info(outputstr)
         elif message.author not in [*self.__allgrouped]:
             outputstr = "{} was not part of a group".format(message.author.name)
             await message.channel.send(outputstr)
-            writeToFile(self.__filename, outputstr)
+            self.log.info(outputstr)
         else:
             await self.ungroup(message, message.author)
 
@@ -235,12 +238,12 @@ class CoreService:
         mentions = message.mentions
         if len(mentions) == 0:
             await message.channel.send("Usage !group @<user> or [list of users]")
-            writeToFile(self.__filename, "{} used incorrect group creation syntax".format(message.author.name))
+            self.log.info("{} used incorrect group creation syntax".format(message.author.name))
             return
         elif message.author not in [*self.__globalMap]:
             outputstr = "Group Creation Failure: {} is not online. Please type \"!on\" tp set your status as online".format(message.author.name)
             await message.channel.send(outputstr)
-            writeToFile(self.__filename, outputstr)
+            self.log.info(outputstr)
             return
         else:
             if self.isGrouped(message.author):
@@ -265,21 +268,21 @@ class CoreService:
             self.validateGroup(message)
             
             if message.author not in [*self.__allgrouped]:
-                writeToFile(self.__filename, "{} created an invalid group, handled".format(message.author.name))
+                self.log.info("{} created an invalid group, handled".format(message.author.name))
                 await message.channel.send("Group invalid, number of valid members must be at least 2")
             else:
                 outputstr = "New Group Created for {}!".format(message.author.name)
                 await message.channel.send(outputstr)
-                writeToFile(self.__filename, outputstr)
+                self.log.info(outputstr)
                 if len(acceptedList) > 0:
                     outputstr = "The following players were added to the group {}".format(acceptedList).replace('[', '').replace(']', '')
                     await message.channel.send(outputstr)
-                    writeToFile(self.__filename, outputstr)
+                    self.log.info(outputstr)
                 if len(blockedList) > 0:
                     outputstr = "The following players were not added since they are already grouped or offline, type !ungroup to remove yourself or !on to set your status as online {}".\
                         format(blockedList).replace('[', '').replace(']', '')
                     await message.channel.send(outputstr)
-                    writeToFile(self.__filename, outputstr)
+                    self.log.info(outputstr)
 
     async def whoisgrouped(self, message):
         if len(self.__groupList) == 0:
@@ -292,32 +295,32 @@ class CoreService:
                 for x in i:
                     nickList.append(x.nick if x.nick is not None else x.name)
                 await message.channel.send("{}) {}".format(self.__groupList.index(i) + 1, nickList))
-        writeToFile(self.__filename, "{} invoked whoisgrouped command. Returned {} results".format(message.author.name, len(self.__groupList)))
+        self.log.info("{} invoked whoisgrouped command. Returned {} results".format(message.author.name, len(self.__groupList)))
 
     async def destroygroup(self, message):
         outputstr = "Admin command invoked by {}".format(message.author.name)
         await message.channel.send(outputstr)
-        writeToFile(self.__filename, outputstr)
+        self.log.info(outputstr)
         if len(self.__groupList) == 0:
             outputstr = "There are no active groups!"
             await message.channel.send(outputstr)
-            writeToFile(self.__filename, outputstr)
+            self.log.info(outputstr)
         elif not any(map(str.isdigit, message.content.lower())):
             await message.channel.send("Usage: !destroygroup <group number>.\nPlease take a look at !whoisgrouped for the group number")
-            writeToFile(self.__filename, "{} invoked command without numbers".format(message.author.name))
+            self.log.info("{} invoked command without numbers".format(message.author.name))
         else:
             groupNo = int(message.content.lower().split(' ')[1]) - 1
             
             if groupNo < 0 or groupNo >= len(self.__groupList):
                 await message.channel.send("Invalid group number")
-                writeToFile(self.__filename, "{} invoked command with incorrect number".format(message.author.name))
+                self.log.info("{} invoked command with incorrect number".format(message.author.name))
                 return
             ungroupList = [k for k,v in self.__allgrouped.items() if int(v) == groupNo]
             try:
                 for i in ungroupList:
                     await self.ungroup(message, i)
             except KeyError as e:
-                writeToFile(self.__filename, "Error: {}".format(e))
+                self.log.info("Error: {}".format(e))
     
     async def alloff(self, message): 
         self.__globalMap.clear()
@@ -325,4 +328,4 @@ class CoreService:
         self.__groupList.clear()
         outputstr = "Admin command invoked by {}, everyone is off! All groups destroyed!".format(message.author.name)
         await message.channel.send(outputstr)
-        writeToFile(self.__filename, outputstr)
+        self.log.info(outputstr)

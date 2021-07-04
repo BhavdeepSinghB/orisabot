@@ -5,3 +5,5 @@ overwatch_team.db*
 *.log
 config_*.py
 nohup.out
+logs/*
+backups/*
