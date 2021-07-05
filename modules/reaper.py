@@ -26,9 +26,10 @@ class Reaper:
         self.__sleep_time = config['sleep_time']
         if log:
             self.log = copy.copy(log)
-            self.log.sender = "REAPER"
         else:
-            self.log = LoggingService
+            self.log = LoggingService(datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
+        self.log.sender = "REAPER"
+        self.log.info("Successfully constructed Reaper")
 
     @property
     def is_enabled(self):
@@ -62,8 +63,10 @@ class Reaper:
         if  (datetime.now() - online_time).seconds > self.__timeout:
             if user in self.__paged_list: 
                 self.__paged_list.remove(user) 
+                self.log.info(f"Removed {user} from pagedList")
             if user in self.__ack_list: 
                 self.__ack_list.remove(user) 
+                self.log.info(f"Removed {user} from ackList")
             self.log.info(f'Reaping issued for {user.name}')
             return 1 
         elif self.__warn and (datetime.now() - online_time).seconds > self.__warn_time: 
@@ -77,6 +80,7 @@ class Reaper:
         if not self.__is_enabled:
             return
         if user in self.__paged_list:
+            self.log.info(f"Acknlowedged page for {user}")
             self.__ack_list.append(user)
             return True
         return False

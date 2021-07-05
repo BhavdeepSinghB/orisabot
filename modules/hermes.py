@@ -30,10 +30,11 @@ class Hermes:
         self.__filename = f"backups/coredump.bak" #TODO add a backup task in the future
         if log:
             self.log = copy.copy(log)
-            self.log.sender = "HERMES"
         else:
             self.log = LoggingService(datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
+        self.log.sender = "HERMES"
         self.__config = {}
+        self.log.info("Successfully constructed Hermes")
     
     @property
     def config(self):
@@ -53,44 +54,45 @@ class Hermes:
 
 
     def _format_globalMap(self, globalMap):
+        self.log.info("Formatting globalMap")
         id_globalMap = {}
         for i in globalMap.keys():
-            try: 
-                id_globalMap[i.id] = globalMap[i].isoformat()
-            except KeyError:
-                # Log this 
-                id_globalMap[i.id] = None
+            id_globalMap[i.id] = globalMap[i].isoformat()
+        self.log.info("Successfully formatted globalMap")
         return id_globalMap 
     
     def _format_notify_dict(self, notifyDict):
+        self.log.info("Formatting notifyDict")
         id_notifyDict = {}
         for i in notifyDict.keys():
             try:
                 id_notifyDict[i.id] = [u.id for u in notifyDict[i]]
             except AttributeError:
+                self.log.info("Adding 'All' to notifyDict")
                 id_notifyDict["All"] = [u.id for u in notifyDict["All"]]
-            except KeyError:
-                # Log this failure
-                id_notifyDict[i] = None
         return id_notifyDict
 
     def write_config(self):
         globalMap = self.__core.get_online_users()
-        self.__config['globalMap'] = self._format_globalMap(globalMap) 
+        self.log.info("Writing globalMap")
+        self.__config['globalMap'] = self._format_globalMap(globalMap) if globalMap else {}
         notifyDict = self.__core.notif_data
-        self.__config['notifyDict'] = self._format_notify_dict(notifyDict)
+        self.log.info("Writing notifyDict")
+        self.__config['notifyDict'] = self._format_notify_dict(notifyDict) if notifyDict else {}
         smurfList = self.__core.smurfs
-        self.__config['smurfList'] = [x.id for x in smurfList]
+        self.log.info("Writing smurfList")
+        self.__config['smurfList'] = [x.id for x in smurfList] if smurfList else []
         with open(self.__filename, 'w') as outfile:
             json.dump(self.__config, outfile, indent=2)
         
     def read_config(self):
         if os.path.isfile(self.__filename):
+            self.log.info("Backup exists")
             with open(self.__filename) as backup_file:
+                self.log.info("Reading config")
                 self.__config = json.load(backup_file)
                 return True
-        # Log this
-        print("Could not find file")
+        self.log.warn("Backup file not found")
         return False
 
 

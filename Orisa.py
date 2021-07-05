@@ -89,7 +89,7 @@ class Orisa:
     @tasks.loop(hours=6)
     async def hermes_backup_task(self):
         if self.__hermes.enabled:
-            self.log.info("(reaper_task) Writing backup")
+            self.log.info("(hermes_task) Writing backup")
             self.__hermes.write_config()
     
     @hermes_backup_task.before_loop

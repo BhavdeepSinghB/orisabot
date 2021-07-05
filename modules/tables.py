@@ -12,9 +12,9 @@ class DBService:
         self = DBService()
         if log:
             self.log = copy.copy(log)
-            self.log.sender = "DATA"
         else:
             self.log = LoggingService(filename=datetime.datetime.strftime("%Y_%m_%d_%H_%M_%S"))
+        self.log.sender = "DATA"
         self.__filename = filename
 
         conn = sqlite3.connect('overwatch_team.db')
@@ -33,16 +33,18 @@ class DBService:
     async def register(self, message):
         c = self.__cursor
         person = message.author
-        if len(message.mentions) > 0 and "admin" in [y.name.lower() for y in message.author.roles]:
+        if len(message.mentions) > 0 and "team member" in [y.name.lower() for y in message.author.roles]:
             person = message.mentions[0]
+            self.log.info(f"Privileged !register invoked by {message.author} for {person}")
         
         if "based" in [y.name.lower() for y in message.author.roles]:
             outputstr = "{} is already registered. Type `!sr @username` for more".format(person.name)
             await message.channel.send(outputstr)
-            self.log.info("[{}] ".format(message.author.name) + outputstr)
+            self.log.error("[{}] ".format(message.author.name) + outputstr)
             return
         
         query = "INSERT INTO {} (name) VALUES ('{}')".format(self.__sr_table_name, person.name)
+        self.log.info(f'Query: {query}')
         if not c.execute(query):
             outputstr = "There's been an error and it has been reported. Please try again, later"
             await message.channel.send(outputstr)
@@ -55,7 +57,6 @@ class DBService:
         
         outputstr += "Please set your SR using `!set <role> <sr>`\n"
         outputstr += "For more commands use `!sr --help`"
-
         await message.channel.send(outputstr)
 
 
@@ -71,15 +72,19 @@ class DBService:
         outputstr += "To repeat this message, type `!sr --help`\n"
         outputstr += "For full help on the bot, type `!ineedhealing`\n"
         await message.channel.send(outputstr)
+        self.log.info(f"SR help message sent to channel {message.channel}")
     
     async def sr(self, message):
         c = self.__cursor
         if "--help" in message.content.lower() or "-help" in message.content.lower():
+            self.log.info(f'Sending SR help message to channel {message.channel}')
             await self.sr_help(message)
             return
 
         if "-team" in message.content.lower():
-            c.execute("SELECT * FROM {}".format(self.__sr_table_name))
+            query = "SELECT * FROM {}".format(self.__sr_table_name)
+            self.log.info(f"Query: {query}")
+            c.execute(query)
             highestList = []
             everyone = c.fetchall()
             for i in everyone:
@@ -118,7 +123,7 @@ class DBService:
         if len(user) == 0:
             outputstr = "No results found for {}, please register using `!register`".format(person)
             await message.channel.send(outputstr)
-            self.log.info(outputstr)
+            self.log.error(outputstr)
             return
 
         user = user[0]
@@ -133,7 +138,7 @@ class DBService:
         
         outputstr += "**Tank: {}**\n".format(user[2]) if high_index == 2 else "Tank: {}\n".format(user[2])
         outputstr += "**Damage: {}**\n".format(user[3]) if high_index == 3 else "Damage: {}\n".format(user[3])
-        outputstr += "**Support: {}**\n".format(user[4]) if high_index == 4 else "Support: {}\n".format(user[4])
+        outputstr += "**Support: {}**".format(user[4]) if high_index == 4 else "Support: {}".format(user[4])
 
         await message.channel.send(outputstr)
         self.log.info(outputstr)
@@ -141,12 +146,12 @@ class DBService:
     
     async def parse_set_query(self, message):
         args = message.content.split(' ')
-        
+        self.log.info(f"Parsing set query for {message.author}")
         try:
             role = args[-2]
         except IndexError:
             outputstr = "Usage: !set {@user} role <sr>"
-            self.log.info("[{}]".format(message.author.name) + outputstr)
+            self.log.error("[{}]".format(message.author.name) + outputstr)
             outputstr += "\nList of acceptable roles - 'tank', 'dps', 'damage', 'dmg', 'support', 'heals'"
             await message.channel.send(outputstr)
             return []
@@ -168,8 +173,8 @@ class DBService:
                 return []
             newSR = int(args[-1])
         except ValueError:
-            outputstr = "Please make sure the SR is correctly written as the last part of the message"
-            self.log.info("Invoked by {}: ".format(message.author.name) + outputstr)
+            outputstr = "Please make sure the SR is written as the last part of the message"
+            self.log.error("Invoked by {}: ".format(message.author.name) + outputstr)
             await message.channel.send(outputstr)
             return []
         
@@ -208,13 +213,14 @@ class DBService:
             outputstr = "There's been an error and it has been reported. Please try again, later"
             await message.channel.send(outputstr)
             outputstr = "Error in executing query {}".format(query)
+            self.log.error(outputstr)
             return
 
         user = c.fetchall()
 
         if len(user) == 0:
             outputstr = "Can't find any details for {}. If you're not registered, type `!register` to start!".format(person)
-            self.log.info(outputstr)
+            self.log.error(outputstr)
             await message.channel.send(outputstr)
             return
 
@@ -231,6 +237,7 @@ class DBService:
             outputstr = "There's been an error and it has been reported. Please try again, later"
             await message.channel.send(outputstr)
             outputstr = "Error in executing query {}".format(query)
+            self.log.error(outputstr)
             return
         
         outputstr = "Successfully changed {}'s {} SR to {}".format(person, role, newSR)
@@ -246,7 +253,7 @@ class DBService:
         timezones = set(c.fetchall())
         
         if len(timezones) == 0:
-            print("Can't find any timezones")
+            self.log.error("Can't find any timezones")
             return
         
         return [i[0] for i in timezones]
@@ -255,8 +262,9 @@ class DBService:
     def get_sender_timezone(self, author_id):
         c = self.__cursor
         query = "SELECT timezone FROM {} WHERE id = '{}'".format(self.__tz_table_name, author_id)
+        self.log.info(f"Query: {query}")
         if not c.execute(query):
-            print("Error executing query")
+            self.log.error("Error executing query")
             return
         timezone = c.fetchall()
         if len(timezone) == 0:
