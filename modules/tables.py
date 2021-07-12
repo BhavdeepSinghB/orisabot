@@ -129,16 +129,16 @@ class DBService:
         user = user[0]
         high = 0
         high_index = 0
-        for i in user[2:]:
+        for i in user[1:]:
             if i is not None and int(i) > high:
                 high = int(i)
                 high_index = user.index(i)
         
         outputstr = "For user **{}**\n".format(person)
         
-        outputstr += "**Tank: {}**\n".format(user[2]) if high_index == 2 else "Tank: {}\n".format(user[2])
-        outputstr += "**Damage: {}**\n".format(user[3]) if high_index == 3 else "Damage: {}\n".format(user[3])
-        outputstr += "**Support: {}**".format(user[4]) if high_index == 4 else "Support: {}".format(user[4])
+        outputstr += "**Tank: {}**\n".format(user[1]) if high_index == 1 else "Tank: {}\n".format(user[1])
+        outputstr += "**Damage: {}**\n".format(user[2]) if high_index == 2 else "Damage: {}\n".format(user[2])
+        outputstr += "**Support: {}**\n".format(user[3]) if high_index == 3 else "Support: {}\n".format(user[3])
 
         await message.channel.send(outputstr)
         self.log.info(outputstr)

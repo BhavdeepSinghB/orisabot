@@ -256,7 +256,7 @@ class Orisa:
             for i in users:
                 try:
                     if self.__reaper.ack(i):
-                        await self.log.priv(f"ACK {i.name}", type="OK")
+                        await self.log.priv(f"[Reaper] ACK {i.name}", type="OK")
                     elif self.__coreservice.__is_online__(i):
                         await self.log.priv(f"[Reaper] {i.name} not paged yet", type="ERR")
                     else:
@@ -378,3 +378,4 @@ class Orisa:
         
         if message.content.lower() == "x":
             await message.channel.send("{} has assembled the X-Men!".format(message.author.name))
+
