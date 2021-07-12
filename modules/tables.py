@@ -1,8 +1,11 @@
-import sqlite3, asyncio, statistics, copy, datetime
+import sqlite3, asyncio, statistics, copy, datetime, os
+from sqlite3.dbapi2 import connect
+from pathlib import Path
 from modules.logging_service import LoggingService
 
 class DBService:
     # Variables
+    __conn = None
     __cursor = None
     __filename = None
     __sr_table_name = ""
@@ -17,11 +20,13 @@ class DBService:
         self.log.sender = "DATA"
         self.__filename = filename
 
+        # if not os.path.isfile("overwatch_team.db"):
+        #     await cls._setup_new_database()
         conn = sqlite3.connect('overwatch_team.db')
         if conn == None:
             self.log.error("Error connecting to database")
             return
-        
+        self.__conn = conn
         self.__cursor = conn.cursor()
 
         outputstr = "Successfully constructed DBService"
@@ -29,7 +34,47 @@ class DBService:
         self.__sr_table_name = "srdata"
         self.__tz_table_name = "tzinfo"
         return self
+    # TODO test this, check out UPSERT for sqlite and add queries for tzinfo
+    @classmethod
+    async def _setup_new_database(cls):
+        db_name = "overwatch_team.db"
+        self.log.info(f"Setting up new database {db_name}")
+        Path(f'./{db_name}').touch()
+        conn = sqlite3.connect(db_name)
+        if not conn:
+            self.log.error("Error connecting to database")
+        cursor = conn.cursor()
+        self.log.info(f"Successfully connected to database {db_name}")
+        # Create srdata table
+        query = "CREATE TABLE srdata ( \
+                name VARACHAR(128), \
+                tank BIGINT, \
+                damage BIGINT, \
+                support BIGINT, \
+                )"
+        self.log.info("Creating srdata table")
+        self.log.info(f"Query: {query}")
+        if not cursor.execute(query):
+            self.log.error("Error creating srdata table, create table command not executed")
+        
+        #Create tzinfo table
+        query = "CREATE TABLE tzinfo ( \
+            id VARCHAR(255), \
+            timezone VARCHAR(255), \
+            )"
+        self.log.info("Creating tzinfo table")
+        self.log.info(f"Query: {query}}")
+        if not cursor.execute(query):
+            self.log.error("Error creating tzinfo table, create table command not executed")
+        
+        conn.commit()
+        conn.close()
 
+    async def commit_changes(self):
+       if self.__conn:
+           self.__conn.commit()
+           self.__conn.close()
+    
     async def register(self, message):
         c = self.__cursor
         person = message.author

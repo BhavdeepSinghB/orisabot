@@ -65,6 +65,9 @@ class Orisa:
 
     async def graceful_death(self, loop):
         self.log.info("Received termination signal")
+        self.log.info("Saving database configuration...")
+        await self.__dbservice.commit_changes()
+        self.log.info("Successfully committed changes")
         if self.__hermes.enabled and self.__hermes.backup_on_death:
             self.log.info("Writing backup...")
             self.__hermes.write_config()

@@ -5,15 +5,6 @@ import json
 import os.path
 import copy
 
-"""
-Project Name: Hermes
-
-- Handler for SIGKILL and SIGINT 
-- Writes current state to json file
-- Gracefully shuts down
-- TODO : Load current state from json file into Orisa object
-
-"""
 
 class Hermes:
     __core = None
