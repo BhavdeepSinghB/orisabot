@@ -13,23 +13,56 @@ class CoreService:
 
 
     @classmethod
-    async def construct(cls, filename):
+    async def construct(cls, filename, config={}, guild=None):
         self = CoreService()
 
         self.__filename = filename
         self.__globalMap = {}
+        if config.get("globalMap", False) and guild:
+            print("Constructing core from backup")
+            config_dict = config['globalMap']
+            for i in config_dict.keys():
+                member = guild.get_member(int(i))
+                if not member:
+                    # Log this failure
+                    continue
+                try:
+                    self.__globalMap[member] = datetime.datetime.fromisoformat(config_dict[i])
+                except TypeError:
+                    # Log this
+                    self.__globalMap[member] = datetime.datetime.now()
         self.__allgrouped = {}
         self.__groupList = []
         self.__smurfList = []
+        if config.get("smurfList", False) and guild:
+            print("Retrieving smurfs from backup")
+            self.__smurfList = [guild.get_member(i) for i in config["smurfList"]]
         self.__notifyDict = {"All": []}
-        
+        if config.get("notifyDict", False) and guild:
+            print("Constructing notifier service from backup")
+            config_dict = config['notifyDict']
+            for i in config_dict.keys():
+                if i == "All":
+                    self.__notifyDict[i] = [guild.get_member(x) for x in config_dict[i]]
+                    continue
+                member = guild.get_member(int(i))
+                if not member:
+                    continue
+                self.__notifyDict[member] =[guild.get_member(x) for x in config_dict[i]]
         outputstr = "Successfully constructed Core Service"
         print(outputstr)
         writeToFile(self.__filename, outputstr)
         return self
 
+    @property
+    def notif_data(self):
+        return self.__notifyDict
 
-    async def get_online_users(self):
+    @property
+    def smurfs(self):
+        return self.__smurfList
+    
+    def get_online_users(self):
         return copy.copy(self.__globalMap)
 
     async def notify(self, message, user, outputstr):

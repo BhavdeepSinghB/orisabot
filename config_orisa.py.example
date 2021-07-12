@@ -1,0 +1,35 @@
+from datetime import time
+
+ORISA_TOKEN = ""
+
+channels = {
+            'log': 00000000000000000,
+            'welcome': 111111111111111,
+        }
+
+roles = {
+            'friend': 222222222222222,
+            'privileged': 33333333333333,
+            'admin' : 444444444444444444,
+            'based' : 55555555555555555,
+            'online' : 66666666666666666,
+        }
+
+bot_tasks = {
+            'reaper' : {
+                'enabled': True,
+                'timeout': 60 * 60 * 12,
+                'warn': True,
+                'warn_time': 60 * 60 * 6,
+                'sleep_time': 60 * 60 * 1,
+                },
+            'hermes' : {
+                'enabled': True,
+                'interval': 60 * 60 * 3,
+                },
+		# Coming soon
+            'custom_task' : {
+                'enabled' : False,
+                'channel' : 687508477513695246,
+                },
+        }

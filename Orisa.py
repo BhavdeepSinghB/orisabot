@@ -8,6 +8,7 @@ from modules.core import CoreService
 from modules.practice import practice
 from modules.utils import writeToFile
 from modules.reaper import Reaper
+from modules.hermes import Hermes
 from discord.utils import get
 from discord.ext import tasks
 
@@ -43,18 +44,39 @@ class Orisa:
         self.__roles = roles
         self.__bot_tasks = bot_tasks
         self.__reaper = Reaper(config=self.__bot_tasks.get("reaper", None), filename=self.__filename)
+        self.__hermes = Hermes(settings=self.__bot_tasks.get("hermes", None), logfilename=self.__filename)
 
         if not self.__reaper.is_enabled:
-            writeToFile("Reaper config not found, disabled")
+            writeToFile(self.__filename, "Reaper config not found, disabled")
             self.__reaper = None
+
+    async def graceful_death(self, loop):
+        await self.log("Received termination signal")
+        if self.__hermes.enabled:
+            await self.log("Writing backup")
+            self.__hermes.write_config()
+        await self.log("Exiting")
+        print("I am dead\n")
+        loop.stop()
 
     def start(self):
         self.taco_message_nine_am.start()
         if self.__reaper:
             self.reaper_task.start()
-        self.__client.run(self.__TOKEN)
+        self.__client.run(self.__TOKEN, destructor=self.graceful_death)
 
+    @tasks.loop(hours=6)
+    async def hermes_backup_task(self):
+        if self.__hermes.enabled:
+            self.__hermes.write_config()
     
+    @hermes_backup_task.before_loop
+    async def hermes_setup(self):
+        await self.__client.wait_until_ready()
+        interval = self.__hermes.interval
+        await self.log(f"[Hermes] [SLEEP] {interval} sec")
+        await asyncio.sleep(interval)
+
     @tasks.loop(hours=24)
     async def taco_message_nine_am(self):
         config = self.__bot_tasks['taco_message']
@@ -63,7 +85,6 @@ class Orisa:
         message_channel = self.__client.get_channel(config['channel'])
         message = config['message']
         if message_channel != None:
-            await self.log(f'[Otto] Sending automated message for task taco_message')
             await message_channel.send(message)
         else:
             await self.log("[Otto] [ERR] Could not locate task channel for task {}".format(self.__bot_tasks['taco_message']))
@@ -75,7 +96,6 @@ class Orisa:
         if not config:
             await self.log("[Otto] [ERR] Cannot find config")
         if not config['enabled']:
-            await self.log("[Otto] Disabled")
             return
         now = datetime.datetime.now()
         if now.time() > config['time']:
@@ -90,7 +110,7 @@ class Orisa:
 
     @tasks.loop(hours=1)
     async def reaper_task(self): 
-        all_online = await self.__coreservice.get_online_users()
+        all_online = self.__coreservice.get_online_users()
         for i in all_online.keys():
             to_reap = self.__reaper.reap(i, all_online[i])
             if to_reap == 1:
@@ -131,8 +151,15 @@ class Orisa:
     async def on_ready(self):
         print("Live")
         await self.log("Logged in as {}".format(self.__client.user))
-        self.__coreservice = await CoreService.construct(self.__filename)
+        
+        config = {}
+        if self.__hermes.read_config():
+            config = self.__hermes.config
+        self.__coreservice = await CoreService.construct(self.__filename, config=config, guild=self.__client.guilds[0])
         self.__dbservice = await DBService.construct(self.__filename)
+        if self.__hermes.enabled:
+            self.__hermes.attach_core(self.__coreservice)
+            self.hermes_backup_task.start()
         
     async def on_member_join(self, member):
         welcomechannel = self.__client.get_channel(self.__channels['welcome'])
@@ -186,7 +213,7 @@ class Orisa:
             for i in users:
                 if self.__reaper.ack(i):
                     await self.log(f"[Reaper] ACK {i.name}")
-                elif self.__coreservice.__is_online__(i):
+                elif await self.__coreservice.__is_online__(i):
                     await self.log(f"[Reaper] {i.name} not paged yet")
                 else:
                     await self.log(f"[Reaper] {i.name} resolved")
@@ -216,7 +243,7 @@ class Orisa:
             await self.__coreservice.alloff(message)
 
         if "!practice" in message.content.lower() and "team member" in [y.name.lower() for y in message.author.roles]:
-            globalMap = await self.__coreservice.get_online_users()
+            globalMap = self.__coreservice.get_online_users()
             await practice(message, globalMap, self.__client)
 
 
