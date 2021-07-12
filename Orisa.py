@@ -63,7 +63,7 @@ class Orisa:
         self.taco_message_nine_am.start()
         if self.__reaper:
             self.reaper_task.start()
-        self.__client.run(self.graceful_death, self.__TOKEN)
+        self.__client.run(self.__TOKEN, destructor=self.graceful_death)
 
     @tasks.loop(hours=6)
     async def hermes_backup_task(self):
@@ -213,7 +213,7 @@ class Orisa:
             for i in users:
                 if self.__reaper.ack(i):
                     await self.log(f"[Reaper] ACK {i.name}")
-                elif self.__coreservice.__is_online__(i):
+                elif await self.__coreservice.__is_online__(i):
                     await self.log(f"[Reaper] {i.name} not paged yet")
                 else:
                     await self.log(f"[Reaper] {i.name} resolved")

@@ -3,5 +3,6 @@ _pycache__/
 modules/client_secret.json
 overwatch_team.db*
 *.log
-config_*.py
+config_orisa.py
+config_alfred.py
 nohup.out

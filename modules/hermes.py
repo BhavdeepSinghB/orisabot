@@ -24,7 +24,7 @@ class Hermes:
     def __init__(self, settings, logfilename):
         self.__enabled = settings.get('enabled', False)
         self.__interval = settings.get('interval', 0)
-        self.__filename = f"backups/coredump.bak" #TODO add a backup task in the future
+        self.__filename = f"backups/coredump.bak"
         self.__logfilename = logfilename
         self.__config = {}
     
@@ -84,7 +84,7 @@ class Hermes:
                 self.__config = json.load(backup_file)
                 return True
         # Log this
-        print("Could not find file")
+        print("[Hermes] No backup file found")
         return False
 
 
