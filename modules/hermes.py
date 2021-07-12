@@ -48,6 +48,10 @@ class Hermes:
     def interval(self):
         return self.__interval
 
+    @property
+    def backup_on_death(self):
+        return self.__backup_on_death
+
     def attach_core(self, Core):
         self.__core = Core
         self.log.info(f"Successfully attached Core: {Core}")

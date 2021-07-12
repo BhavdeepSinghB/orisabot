@@ -84,7 +84,7 @@ class Orisa:
         if self.__reaper:
             self.log.info("Starting reaper task")
             self.reaper_task.start()
-        self.__client.run(self.graceful_death, self.__TOKEN)
+        self.__client.run(self.__TOKEN, destructor=self.graceful_death)
 
     @tasks.loop(hours=6)
     async def hermes_backup_task(self):

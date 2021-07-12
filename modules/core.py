@@ -82,8 +82,8 @@ class CoreService:
                     if not i == user:
                         self.log.info(f'Notifying {i}')
                         await i.send(outputstr)
-                    # remove user, avoiding spam
-                    self.__notifyDict[obj].remove(i)
+                        # remove user, avoiding spam
+                        self.__notifyDict[obj].remove(i)
     
     async def on(self, message=None, role=None, user=None, channel=None):
 
