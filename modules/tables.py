@@ -1,5 +1,5 @@
-import sqlite3, asyncio, statistics
-from modules.utils import writeToFile
+import sqlite3, asyncio, statistics, copy, datetime
+from modules.logging_service import LoggingService
 
 class DBService:
     # Variables
@@ -8,21 +8,24 @@ class DBService:
     __sr_table_name = ""
     
     @classmethod
-    async def construct(cls, filename):
+    async def construct(cls, filename, log=None):
         self = DBService()
-        
+        if log:
+            self.log = copy.copy(log)
+        else:
+            self.log = LoggingService(filename=datetime.datetime.strftime("%Y_%m_%d_%H_%M_%S"))
+        self.log.sender = "DATA"
         self.__filename = filename
 
         conn = sqlite3.connect('overwatch_team.db')
         if conn == None:
-            writeToFile(self.__filename, "Error connecting to database")
+            self.log.error("Error connecting to database")
             return
         
         self.__cursor = conn.cursor()
 
         outputstr = "Successfully constructed DBService"
-        print(outputstr)
-        writeToFile(self.__filename, outputstr)
+        self.log.info(outputstr)
         self.__sr_table_name = "srdata"
         self.__tz_table_name = "tzinfo"
         return self
@@ -30,28 +33,30 @@ class DBService:
     async def register(self, message):
         c = self.__cursor
         person = message.author
-        if len(message.mentions) > 0 and "admin" in [y.name.lower() for y in message.author.roles]:
+        if len(message.mentions) > 0 and "team member" in [y.name.lower() for y in message.author.roles]:
             person = message.mentions[0]
+            self.log.info(f"Privileged !register invoked by {message.author} for {person}")
         
         if "based" in [y.name.lower() for y in message.author.roles]:
             outputstr = "{} is already registered. Type `!sr @username` for more".format(person.name)
             await message.channel.send(outputstr)
-            writeToFile(self.__filename, "[{}] ".format(message.author.name) + outputstr)
+            self.log.error("[{}] ".format(message.author.name) + outputstr)
             return
         
         query = "INSERT INTO {} (name) VALUES ('{}')".format(self.__sr_table_name, person.name)
+        self.log.info(f'Query: {query}')
         if not c.execute(query):
             outputstr = "There's been an error and it has been reported. Please try again, later"
             await message.channel.send(outputstr)
             outputstr = "Error in executing query {}".format(query)
+            self.log.error(outputstr)
             return
 
         outputstr = "Successfully added new database entry for {}\n".format(person.name)
-        writeToFile(self.__filename, outputstr)
+        self.log.info(outputstr)
         
         outputstr += "Please set your SR using `!set <role> <sr>`\n"
         outputstr += "For more commands use `!sr --help`"
-
         await message.channel.send(outputstr)
 
 
@@ -67,15 +72,19 @@ class DBService:
         outputstr += "To repeat this message, type `!sr --help`\n"
         outputstr += "For full help on the bot, type `!ineedhealing`\n"
         await message.channel.send(outputstr)
+        self.log.info(f"SR help message sent to channel {message.channel}")
     
     async def sr(self, message):
         c = self.__cursor
         if "--help" in message.content.lower() or "-help" in message.content.lower():
+            self.log.info(f'Sending SR help message to channel {message.channel}')
             await self.sr_help(message)
             return
 
         if "-team" in message.content.lower():
-            c.execute("SELECT * FROM {}".format(self.__sr_table_name))
+            query = "SELECT * FROM {}".format(self.__sr_table_name)
+            self.log.info(f"Query: {query}")
+            c.execute(query)
             highestList = []
             everyone = c.fetchall()
             for i in everyone:
@@ -93,7 +102,7 @@ class DBService:
             if "-v" in message.content.lower():
                 outputstr += "Median (exact middle) SR: {:.2f}\n".format(median)
                 outputstr += "Standard Deviation: {:.2f}\n".format(standard_dev)
-            writeToFile(self.__filename, "[{}]".format(message.author.name) + outputstr)
+            self.log.info("[{}]".format(message.author.name) + outputstr)
             outputstr += "\nPlease note that this is based on the provided data so far. Type !sr --help for commands."
             await message.channel.send(outputstr)
             return
@@ -101,7 +110,7 @@ class DBService:
         person = message.author.name
         if len(message.mentions) > 0:
             person = message.mentions[0].name
-            writeToFile(self.__filename, "[{}] invoked !sr for {}".format(message.author.name, person))
+            self.log.info("[{}] invoked !sr for {}".format(message.author.name, person))
         
         query = "SELECT * FROM {} WHERE name  = '{}'".format(self.__sr_table_name, person)
         if not c.execute(query):
@@ -114,7 +123,7 @@ class DBService:
         if len(user) == 0:
             outputstr = "No results found for {}, please register using `!register`".format(person)
             await message.channel.send(outputstr)
-            writeToFile(self.__filename, outputstr)
+            self.log.error(outputstr)
             return
 
         user = user[0]
@@ -132,17 +141,17 @@ class DBService:
         outputstr += "**Support: {}**\n".format(user[3]) if high_index == 3 else "Support: {}\n".format(user[3])
 
         await message.channel.send(outputstr)
-        writeToFile(self.__filename, outputstr)
+        self.log.info(outputstr)
          
     
     async def parse_set_query(self, message):
         args = message.content.split(' ')
-        
+        self.log.info(f"Parsing set query for {message.author}")
         try:
             role = args[-2]
         except IndexError:
             outputstr = "Usage: !set {@user} role <sr>"
-            writeToFile(self.__filename, "[{}]".format(message.author.name) + outputstr)
+            self.log.error("[{}]".format(message.author.name) + outputstr)
             outputstr += "\nList of acceptable roles - 'tank', 'dps', 'damage', 'dmg', 'support', 'heals'"
             await message.channel.send(outputstr)
             return []
@@ -151,7 +160,7 @@ class DBService:
         
         if not role in roleList:
             outputstr = "Usage: !set {@user} role <sr>"
-            writeToFile(self.__filename, "{}: ".format(message.author.name) + outputstr)
+            self.log.error("{}: ".format(message.author.name) + outputstr)
             outputstr += "\nList of acceptable roles - ['tank', 'dps', 'damage', 'dmg', 'support', 'heals']"
             await message.channel.send(outputstr)
             return []
@@ -160,18 +169,18 @@ class DBService:
             if len(args[-1]) != 4:
                 outputstr = "Please make sure the SR is a 4 digit number"
                 await message.channel.send(outputstr)
-                writeToFile(self.__filename, outputstr)
+                self.log.error(outputstr)
                 return []
             newSR = int(args[-1])
         except ValueError:
-            outputstr = "Please make sure the SR is correctly written as the last part of the message"
-            writeToFile(self.__filename, "Invoked by {}: ".format(message.author.name) + outputstr)
+            outputstr = "Please make sure the SR is written as the last part of the message"
+            self.log.error("Invoked by {}: ".format(message.author.name) + outputstr)
             await message.channel.send(outputstr)
             return []
         
         if newSR < 0:
             outputstr = "{}, please make sure the SR is a positive number".format(message.author.name)
-            writeToFile(self.__filename, outputstr)
+            self.log.error(outputstr)
             await message.channel.send(outputstr)
             return []
 
@@ -187,7 +196,7 @@ class DBService:
             else:
                 outputstr = "Sorry, {}. You'll need admin permissions to do that".format(message.author.name)
                 await message.channel.send(outputstr)
-                writeToFile(self.__filename, outputstr)
+                self.log.error(outputstr)
                 return
         else:
             user = message.author
@@ -204,13 +213,14 @@ class DBService:
             outputstr = "There's been an error and it has been reported. Please try again, later"
             await message.channel.send(outputstr)
             outputstr = "Error in executing query {}".format(query)
+            self.log.error(outputstr)
             return
 
         user = c.fetchall()
 
         if len(user) == 0:
             outputstr = "Can't find any details for {}. If you're not registered, type `!register` to start!".format(person)
-            writeToFile(self.__filename, outputstr)
+            self.log.error(outputstr)
             await message.channel.send(outputstr)
             return
 
@@ -227,11 +237,12 @@ class DBService:
             outputstr = "There's been an error and it has been reported. Please try again, later"
             await message.channel.send(outputstr)
             outputstr = "Error in executing query {}".format(query)
+            self.log.error(outputstr)
             return
         
         outputstr = "Successfully changed {}'s {} SR to {}".format(person, role, newSR)
         await message.channel.send(outputstr)
-        writeToFile(self.__filename, outputstr)
+        self.log.info(outputstr)
         await self.sr(message)
     
     def get_all_timezones(self):
@@ -242,7 +253,7 @@ class DBService:
         timezones = set(c.fetchall())
         
         if len(timezones) == 0:
-            print("Can't find any timezones")
+            self.log.error("Can't find any timezones")
             return
         
         return [i[0] for i in timezones]
@@ -251,13 +262,14 @@ class DBService:
     def get_sender_timezone(self, author_id):
         c = self.__cursor
         query = "SELECT timezone FROM {} WHERE id = '{}'".format(self.__tz_table_name, author_id)
+        self.log.info(f"Query: {query}")
         if not c.execute(query):
-            print("Error executing query")
+            self.log.error("Error executing query")
             return
         timezone = c.fetchall()
         if len(timezone) == 0:
             outputstr = "Can't find any details for {}".format(author_id)
-            writeToFile(self.__filename, outputstr)
+            self.log.error(outputstr)
             return
         return timezone[0][0]
 
