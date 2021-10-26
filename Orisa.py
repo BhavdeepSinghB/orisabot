@@ -84,11 +84,41 @@ class Orisa:
     def start(self):
         self.log.info("Starting taco message task")
         self.taco_message_nine_am.start()
+        self.automated_message_task.start()
         if self.__reaper:
             self.log.info("Starting reaper task")
             self.reaper_task.start()
         self.__client.run(self.__TOKEN, destructor=self.graceful_death)
 
+    @tasks.loop(hours=12)
+    async def automated_message_task(self):
+        config = self.__bot_tasks.get('automated_message')
+        if not config:
+            return
+        if not config.get('enabled'):
+            return
+        channel = self.__client.get_channel(config.get('channel', None))
+        if not channel:
+            self.log.error("Automated message channel not found")
+            return
+        await channel.send(config.get('message'))
+        self.log.info("Message sent")
+    
+    @automated_message_task.before_loop
+    async def automated_message_task_wait(self):
+        config = self.__bot_tasks.get('automated_message')
+        if not config:
+            return
+        if not config.get('enabled'):
+            return
+        try:
+            if datetime.datetime.now() < config.get('interval'):
+                self.log.info(f'(automated_message task) [SLEEP] {(config.get("interval") - datetime.datetime.now()).seconds}')
+                await asyncio.sleep((config.get('interval') - datetime.datetime.now()).total_seconds())
+        except TypeError as e:
+            self.log.error(f'(automated_message task) [ERR] TypeError no datetime detected')
+            print(e)
+    
     @tasks.loop(hours=6)
     async def hermes_backup_task(self):
         if self.__hermes.enabled:

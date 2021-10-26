@@ -16,9 +16,8 @@ class DBService:
         if log:
             self.log = copy.copy(log)
         else:
-            self.log = LoggingService(filename=datetime.datetime.strftime("%Y_%m_%d_%H_%M_%S"))
+            self.log = LoggingService(filename=filename)
         self.log.sender = "DATA"
-        self.__filename = filename
 
         # if not os.path.isfile("overwatch_team.db"):
         #     await cls._setup_new_database()
@@ -63,10 +62,9 @@ class DBService:
             timezone VARCHAR(255), \
             )"
         self.log.info("Creating tzinfo table")
-        self.log.info(f"Query: {query}}")
+        self.log.info(f"Query: {query}")
         if not cursor.execute(query):
-            self.log.error("Error creating tzinfo table, create table command not executed")
-        
+            self.log.error("Error creating tzinfo table, create table command not executed") 
         conn.commit()
         conn.close()
 

@@ -2,6 +2,7 @@ import datetime
 import asyncio
 from discord import DiscordException
 
+
 class LoggingService:
     def __init__(self, filename, log_channel=None):
         self.__filename = f"logs/{filename}.log"
